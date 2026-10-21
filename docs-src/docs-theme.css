@@ -1,4 +1,4 @@
-:root{color-scheme:dark;--text:#d4d4d4;--muted:#a3a3a3;--accent:#d4d4d4;--line:#363636;--soft:#262626}
+:root{color-scheme:dark;--text:#b8b8b8;--muted:#909090;--accent:#bcbcbc;--line:#363636;--soft:#262626}
 *{box-sizing:border-box}
 html{scroll-padding-top:90px}
 body{margin:0;background:#1b1b1b;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;font-size:16px;line-height:1.9;overflow-wrap:anywhere}
@@ -6,20 +6,20 @@ a{color:var(--accent);text-underline-offset:4px}
 a:hover{text-decoration-thickness:2px}
 a:focus-visible,summary:focus-visible{outline:3px solid #a3a3a3;outline-offset:4px;border-radius:4px}
 .topbar{height:72px;position:sticky;top:0;z-index:10;background:#1b1b1bf5;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 36px;backdrop-filter:blur(12px)}
-.brand{color:#ededed;font-size:24px;font-weight:800;text-decoration:none;letter-spacing:-.6px}
+.brand{color:#c6c6c6;font-size:24px;font-weight:800;text-decoration:none;letter-spacing:-.6px}
 .brand span{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:18px}
 .repo-link{font-size:14px;color:var(--muted);text-decoration:none}
 .layout{max-width:1340px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr)}
 .sidebar{position:sticky;top:72px;align-self:start;height:calc(100vh - 72px);overflow:auto;padding:36px 20px;border-right:1px solid var(--line)}
 .nav-label{font-size:12px;font-weight:700;color:var(--muted);margin:0 12px 14px}
 .chapters{list-style:none;padding:0;margin:0;display:grid;gap:5px}
-.chapters a{display:block;padding:9px 12px;font-size:14px;line-height:1.7;color:#b8b8b8;text-decoration:none;border-radius:7px}
+.chapters a{display:block;padding:9px 12px;font-size:14px;line-height:1.7;color:#a5a5a5;text-decoration:none;border-radius:7px}
 .chapters a:hover{background:var(--soft)}
-.chapters a[aria-current=page]{background:#303030;color:#f0f0f0;font-weight:700}
+.chapters a[aria-current=page]{background:#292929;color:#c2c2c2;font-weight:700}
 main{min-width:0;width:100%;max-width:900px;padding:48px 60px 20px}
 .eyebrow{font-size:11px;letter-spacing:2px;font-weight:700;color:var(--muted);margin-bottom:12px}
-h1{font-size:clamp(26px,3vw,34px);line-height:1.5;letter-spacing:.02em;margin:0 0 30px;color:#ededed}
-h2{font-size:22px;line-height:1.6;margin:42px 0 18px;padding-bottom:10px;border-bottom:1px solid var(--line);color:#ededed}
+h1{font-size:clamp(26px,3vw,34px);line-height:1.5;letter-spacing:.02em;margin:0 0 30px;color:#c6c6c6}
+h2{font-size:22px;line-height:1.6;margin:42px 0 18px;padding-bottom:10px;border-bottom:1px solid var(--line);color:#c6c6c6}
 h3{font-size:18px;line-height:1.6;margin-top:28px}
 p{margin:0 0 20px}
 ul,ol{padding-left:1.5em;margin:0 0 24px}
