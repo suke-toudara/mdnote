@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "MD Editor",
+  "productName": "mdnote",
   "version": "0.1.0",
   "identifier": "local.mdeditor.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "MD Editor",
+        "title": "mdnote",
         "width": 1280,
         "height": 860,
         "resizable": true,
@@ -60,5 +60,5 @@
       }
     ]
   },
-  "mainBinaryName": "md-editor"
+  "mainBinaryName": "mdnote"
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MD Editor の起動スクリプト
+# mdnote の起動スクリプト
 #
 #   ./start.sh [ファイル.md]          アプリを起動する (ソースが更新されていれば先にビルドする)
 #   ./start.sh --dev [ファイル.md]    開発モード (ホットリロード) で起動する
@@ -8,8 +8,8 @@ set -euo pipefail
 
 cd "$(dirname "$(readlink -f "$0")")"
 
-BIN=src-tauri/target/release/md-editor
-LOG="${XDG_STATE_HOME:-$HOME/.local/state}/md-editor.log"
+BIN=src-tauri/target/release/mdnote
+LOG="${XDG_STATE_HOME:-$HOME/.local/state}/mdnote.log"
 
 mode=run
 case "${1:-}" in
@@ -49,4 +49,4 @@ fi
 mkdir -p "$(dirname "$LOG")"
 nohup "$BIN" "${files[@]}" >"$LOG" 2>&1 &
 disown
-echo "MD Editor を起動しました (ログ: $LOG)"
+echo "mdnote を起動しました (ログ: $LOG)"

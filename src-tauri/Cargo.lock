@@ -2033,7 +2033,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "md-editor"
+name = "mdnote"
 version = "0.1.0"
 dependencies = [
  "glib",

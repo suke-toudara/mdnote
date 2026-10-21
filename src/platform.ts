@@ -56,7 +56,7 @@ function isAbort(e: unknown) {
 // ---- 共通 API ----
 
 export async function confirmDialog(message: string): Promise<boolean> {
-  if (isTauri) return ask(message, { title: 'MD Editor', kind: 'warning' });
+  if (isTauri) return ask(message, { title: 'mdnote', kind: 'warning' });
   return window.confirm(message);
 }
 

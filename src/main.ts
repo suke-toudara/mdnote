@@ -56,7 +56,7 @@ const THEME_LABEL: Record<Theme, string> = { system: 'システムに合わせ�
 const UNTITLED = '無題.md';
 const AUTOSAVE_DELAY = 1500;
 
-const SAMPLE = `# MD Editor へようこそ
+const SAMPLE = `# mdnote へようこそ
 
 この画面のまま直接編集できます。保存すると普通の Markdown になります。
 
@@ -380,7 +380,7 @@ function updateDocUi() {
   filenameEl.textContent = cur.doc.name;
   filenameEl.title = cur.doc.path ?? cur.doc.name;
   dirtyEl.hidden = !cur.dirty;
-  setWindowTitle(`${cur.dirty ? '● ' : ''}${cur.doc.name} - MD Editor`);
+  setWindowTitle(`${cur.dirty ? '● ' : ''}${cur.doc.name} - mdnote`);
   renderTabs();
   fileTree.setActive(cur.doc.path);
 }

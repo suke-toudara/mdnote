@@ -1,0 +1,56 @@
+name: Build Linux packages
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check release version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const pkg = JSON.parse(fs.readFileSync('package.json'));
+          const config = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json'));
+          const cargo = fs.readFileSync('src-tauri/Cargo.toml', 'utf8').match(/^version = "([^"]+)"/m)[1];
+          if (pkg.version !== config.version || cargo !== config.version || process.env.RELEASE_TAG !== `v${config.version}`) {
+            throw new Error('タグとアプリのバージョンが一致していません');
+          }
+          JS
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2 file
+      - run: npm ci
+      - name: Build packages and create draft release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: mdnote ${{ github.ref_name }}
+          releaseBody: |
+            Linux x86_64 向けの mdnote です。Ubuntu 22.04 でビルドしています。
+            Ubuntu・Debian 系では deb、ファイルから起動する場合は AppImage を選んでください。
+            公開前に対応環境での動作確認結果と変更内容を記載してください。
+          releaseDraft: true
+          prerelease: false
+          args: --bundles deb,appimage

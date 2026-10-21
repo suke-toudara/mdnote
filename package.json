@@ -1,7 +1,7 @@
 {
   "name": "mdnote",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "app": "tauri dev",
-    "app:build": "tauri build --bundles deb"
+    "app:build": "tauri build --bundles deb,appimage",
+    "app:build:deb": "tauri build --bundles deb",
+    "app:build:appimage": "tauri build --bundles appimage"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.3",

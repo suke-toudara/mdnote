@@ -1,5 +1,5 @@
 [package]
-name = "md-editor"
+name = "mdnote"
 version = "0.1.0"
 description = "WYSIWYG Markdown editor"
 authors = ["yoshida"]
