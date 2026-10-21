@@ -12,6 +12,7 @@
   --mark-current: rgba(255, 140, 0, 0.7);
   --danger: #d1242f;
   --font-rounded: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
+  --document-font: var(--font-rounded);
   color-scheme: light;
   font-family: var(--font-rounded);
 }
@@ -33,117 +34,59 @@
 }
 
 :root[data-theme="dark"] .toolbar {
-  background: #3c3c3c;
-  border-bottom-color: #2b2b2b;
-}
-
-:root[data-theme="dark"] .toolbar button:not(.active) {
-  background: #3c3c3c;
-  border-color: #5a5a5a;
-  color: #cccccc;
-}
-
-:root[data-theme="dark"] .toolbar button:not(.active):hover {
-  background: #4a4a4a;
-}
-
-:root[data-theme="dark"] .statusbar {
-  background: #007acc;
-  border-top-color: #007acc;
-  color: #ffffff;
-}
-
-:root[data-theme="dark"] .statusbar .error {
-  color: #ffd2cc;
-}
-
-:root[data-theme="dark"] .outline-item.current {
-  color: #ffffff;
-  background: #37373d;
-}
-
-:root[data-theme="dark"] .wysiwyg-pane .milkdown {
-  --crepe-color-background: #1e1e1e;
-  --crepe-color-on-background: #d4d4d4;
-  --crepe-color-surface: #252526;
-  --crepe-color-surface-low: #2d2d30;
-  --crepe-color-on-surface: #cccccc;
-  --crepe-color-on-surface-variant: #9d9d9d;
-  --crepe-color-outline: #5a5a5a;
-  --crepe-color-primary: #3794ff;
-  --crepe-color-secondary: #264f78;
-  --crepe-color-on-secondary: #ffffff;
-  --crepe-color-inverse: #d4d4d4;
-  --crepe-color-on-inverse: #1e1e1e;
-  --crepe-color-inline-code: #ce9178;
-  --crepe-color-error: #f48771;
-  --crepe-color-hover: #2a2d2e;
-  --crepe-color-selected: #264f78;
-  --crepe-color-inline-area: #2d2d30;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  height: 100%;
-  background: var(--bg);
-  color: var(--fg);
-}
-
-body {
   display: flex;
   flex-direction: column;
-}
-
-button {
-  font: inherit;
-  font-size: 13px;
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--fg);
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: var(--accent);
-}
-
-button.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-fg);
-}
-
-.icon-btn {
-  min-width: 30px;
-  padding: 4px 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ---- ツールバー ---- */
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 12px;
+  padding: 0 12px;
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
 }
-
-.toolbar .group {
+.toolbar-row {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 6px 0;
 }
+.toolbar-secondary { border-top: 1px solid var(--border); }
+.toolbar-actions, .toolbar .group { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.toolbar-view { flex-wrap: wrap; }
+.toolbar-preferences { margin-left: auto; }
+.toolbar-menu { position: relative; }
+.toolbar-menu summary {
+  display: block;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  background: var(--bg);
+}
+.toolbar-menu summary::after { content: "⌄"; margin-left: 9px; color: var(--muted); }
+.toolbar-menu summary::-webkit-details-marker { display: none; }
+.toolbar-menu summary:hover { border-color: var(--accent); }
+.toolbar-menu-panel {
+  position: absolute;
+  z-index: 45;
+  top: calc(100% + 5px);
+  left: 0;
+  min-width: 205px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--toolbar-bg);
+  box-shadow: 0 8px 24px rgba(0,0,0,.24);
+}
+.toolbar-menu-panel > button, .toolbar-menu-panel > .recent-wrap > button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+.toolbar-menu-panel button:hover { background: var(--hover); }
+.menu-divider { border-top: 1px solid var(--border); margin: 5px 2px; }
+.toolbar-menu .recent-menu { left: calc(100% + 5px); top: 0; }
 
 .recent-wrap {
   position: relative;
@@ -861,9 +804,9 @@ body.outline-hidden .outline {
 
 .wysiwyg-pane .milkdown {
   min-height: 100%;
-  /* テーマ側の書体 (明朝の見出しなど) を丸ゴシックに置き換える */
-  --crepe-font-title: var(--font-rounded);
-  --crepe-font-default: var(--font-rounded);
+  --crepe-font-title: var(--document-font);
+  --crepe-font-default: var(--document-font);
+  font-family: var(--document-font);
 }
 
 .wysiwyg-pane .milkdown .ProseMirror {
@@ -939,6 +882,14 @@ body.outline-hidden .outline {
   color: var(--danger);
 }
 
+/* 本文フォントは文書表示だけに適用する。 */
+:root[data-font="sans"] { --document-font: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; }
+:root[data-font="serif"] { --document-font: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif; }
+:root[data-font="system"] { --document-font: system-ui, sans-serif; }
+.setting-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin: 16px 0; }
+.setting-row select { min-width: 160px; font: inherit; background: var(--bg); color: var(--fg); border: 1px solid var(--border); padding: 5px; border-radius: 5px; }
+.setting-note { color: var(--muted); font-size: 12px; }
+
 @media (max-width: 720px) {
   .wysiwyg-pane .milkdown .ProseMirror {
     padding: 16px;
@@ -956,7 +907,10 @@ body.outline-hidden .outline {
     box-shadow: 4px 0 18px rgba(0, 0, 0, 0.2);
   }
   .body { position: relative; }
-  .toolbar { gap: 6px; padding: 6px; }
+  .toolbar { padding: 0 6px; }
+  .toolbar-row { flex-wrap: wrap; gap: 6px; }
+  .toolbar-primary .filename { order: -1; flex-basis: 100%; text-align: left; }
+  .toolbar-view { flex: 1; }
   .filename { min-width: 90px; }
 }
 

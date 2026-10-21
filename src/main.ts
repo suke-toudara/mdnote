@@ -41,7 +41,6 @@ import {
 import { addRecent, readDrafts, readRecent, readSession, removeRecent, writeDrafts, writeSession, type Draft, type RecentFile } from './session';
 import { brInTableCells, excelLikeTable, selectionInTable } from './table-edit';
 import { setupTableMenu } from './table-menu';
-import { showContextMenu } from './context-menu';
 import { defaultHandlers } from 'mdast-util-to-markdown';
 import type { Handle } from 'mdast-util-to-markdown';
 import { offsetTopsOf, replaceRange, scrollToPos, setupSourceEditor } from './source-editor';
@@ -127,6 +126,7 @@ const statusMessage = $('status-message');
 const statusCount = $('status-count');
 const docStats = $('doc-stats');
 const themeButton = $<HTMLButtonElement>('btn-theme');
+const fontChoice = $<HTMLSelectElement>('font-choice');
 const autosaveButton = $<HTMLButtonElement>('btn-autosave');
 const recentButton = $<HTMLButtonElement>('btn-recent');
 const recentMenu = $('recent-menu');
@@ -199,6 +199,13 @@ tabs.push(cur);
 
 let mode: Mode = loadPref('mode', MODES, 'wysiwyg');
 let theme: Theme = loadPref('theme', THEMES, 'system');
+const FONTS = ['rounded', 'sans', 'serif', 'system'] as const;
+let documentFont = loadPref('documentFont', FONTS, 'rounded');
+function applyDocumentFont() {
+  document.documentElement.dataset.font = documentFont;
+  fontChoice.value = documentFont;
+}
+applyDocumentFont();
 let autosave = loadPref('autosave', ['on', 'off'] as const, 'on') === 'on';
 // Enter を段落内の改行 (行末に半角スペース 2 つ) にするか。オフなら Enter で段落を分ける
 let hardBreakEnter = loadPref('hardBreakEnter', ['on', 'off'] as const, 'on') === 'on';
@@ -223,7 +230,7 @@ function applyTheme(forced?: 'light' | 'dark') {
   const resolved = forced ?? (theme === 'system' ? (darkQuery.matches ? 'dark' : 'light') : theme);
   document.documentElement.dataset.theme = resolved;
   crepeTheme.textContent = resolved === 'dark' ? darkTheme : lightTheme;
-  themeButton.title = `テーマ: ${THEME_LABEL[theme]}`;
+  themeButton.textContent = `テーマ: ${THEME_LABEL[theme]}`;
 }
 
 darkQuery.addEventListener('change', () => applyTheme());
@@ -1338,30 +1345,10 @@ function setHardBreakEnter(value: boolean) {
 }
 
 function openSettings() {
-  const rect = $('btn-settings').getBoundingClientRect();
-  const check = (on: boolean) => (on ? '✓ ' : '　 ');
-  showContextMenu(
-    [
-      {
-        label: `${check(hardBreakEnter)}Enter で改行（行末に半角スペース 2 つ）`,
-        run: () => {
-          setHardBreakEnter(!hardBreakEnter);
-          showStatus(hardBreakEnter ? 'Enter で改行します（2 回押すと段落を分けます）' : 'Enter で段落を分けます（Shift+Enter で改行）');
-        },
-      },
-      {
-        label: `${check(autosave)}自動保存`,
-        run: () => {
-          setAutosave(!autosave);
-          showStatus(autosave ? '自動保存をオンにしました' : '自動保存をオフにしました');
-        },
-      },
-      'separator',
-      { label: `テーマ: ${THEME_LABEL[theme]}（クリックで切り替え）`, run: cycleTheme },
-    ],
-    rect.left,
-    rect.bottom + 4,
-  );
+  fontChoice.value = documentFont;
+  $<HTMLInputElement>('hard-break-enter').checked = hardBreakEnter;
+  $<HTMLInputElement>('settings-autosave').checked = autosave;
+  $<HTMLDialogElement>('app-settings').showModal();
 }
 
 // ---- ボタン・ショートカット ----
@@ -1401,6 +1388,7 @@ document.addEventListener('click', (e) => {
   if (!(e.target as HTMLElement).closest('#recent-wrap')) closeRecent();
 });
 $('btn-save').addEventListener('click', run(() => doSave()));
+$('btn-save-primary').addEventListener('click', run(() => doSave()));
 $('btn-save-as').addEventListener('click', run(() => doSave(cur, true)));
 $('btn-find').addEventListener('click', () => openFind(true));
 $('btn-outline').addEventListener('click', toggleSidebar);
@@ -1415,13 +1403,35 @@ $('print-preview').addEventListener('click', run(doPrintPreview));
 $('export-pdf').addEventListener('click', run(doPdfExport));
 pageSizeSelect.addEventListener('change', savePrintSettings);
 pageMarginSelect.addEventListener('change', savePrintSettings);
-$('btn-settings').addEventListener('click', (e) => {
-  e.stopPropagation();
-  openSettings();
+$('btn-settings').addEventListener('click', openSettings);
+$('settings-close').addEventListener('click', () => $<HTMLDialogElement>('app-settings').close());
+fontChoice.addEventListener('change', () => {
+  documentFont = fontChoice.value as typeof documentFont;
+  savePref('documentFont', documentFont);
+  applyDocumentFont();
 });
+$<HTMLInputElement>('hard-break-enter').addEventListener('change', (e) => setHardBreakEnter((e.target as HTMLInputElement).checked));
+$<HTMLInputElement>('settings-autosave').addEventListener('change', (e) => setAutosave((e.target as HTMLInputElement).checked));
 autosaveButton.addEventListener('click', () => {
   setAutosave(!autosave);
+  $<HTMLInputElement>('settings-autosave').checked = autosave;
   showStatus(autosave ? '自動保存をオンにしました' : '自動保存をオフにしました');
+});
+
+const toolbarMenus = [...document.querySelectorAll<HTMLDetailsElement>('.toolbar-menu')];
+for (const menu of toolbarMenus) {
+  menu.addEventListener('toggle', () => {
+    if (menu.open) toolbarMenus.forEach((other) => { if (other !== menu) other.open = false; });
+    else closeRecent();
+  });
+  menu.querySelector('.toolbar-menu-panel')?.addEventListener('click', (e) => {
+    if (!(e.target as HTMLElement).closest('button')) return;
+    if ((e.target as HTMLElement).closest('#btn-recent')) return;
+    menu.open = false;
+  });
+}
+document.addEventListener('click', (e) => {
+  if (!(e.target as HTMLElement).closest('.toolbar-menu')) toolbarMenus.forEach((menu) => { menu.open = false; });
 });
 
 window.addEventListener('keydown', (e) => {
