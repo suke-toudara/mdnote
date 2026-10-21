@@ -14,29 +14,9 @@ fn move_to_trash(path: String) -> Result<(), String> {
   trash::delete(&path).map_err(|e| e.to_string())
 }
 
-#[derive(Default)]
-pub(crate) struct ClaudeKey(pub(crate) std::sync::Mutex<Option<String>>);
-
-#[tauri::command]
-fn claude_key_status(state: tauri::State<'_, ClaudeKey>) -> bool {
-  state.0.lock().map(|key| key.is_some()).unwrap_or(false)
-    || std::env::var("ANTHROPIC_API_KEY").is_ok_and(|key| !key.trim().is_empty())
-}
-
-#[tauri::command]
-fn set_claude_key(state: tauri::State<'_, ClaudeKey>, key: String) -> Result<(), String> {
-  let mut saved = state.0.lock().map_err(|_| "API キーを設定できませんでした".to_string())?;
-  let key = key.trim();
-  if !key.is_empty() && !key.starts_with("sk-ant-") {
-    return Err("Claude の API キーを入力してください".into());
-  }
-  *saved = if key.is_empty() { None } else { Some(key.to_owned()) };
-  Ok(())
-}
-
 #[tauri::command]
 async fn ask_claude(
-  state: tauri::State<'_, ClaudeKey>,
+  state: tauri::State<'_, credentials::ClaudeKey>,
   document: String,
   question: String,
   mode: String,
@@ -49,11 +29,7 @@ async fn ask_claude(
   if history.len() > 8 || history.iter().any(|turn| turn.content.len() > 10_000) {
     return Err("会話の履歴が長すぎます".into());
   }
-  let key = state.0.lock().map_err(|_| "API キーを読み込めませんでした".to_string())?
-    .clone()
-    .or_else(|| std::env::var("ANTHROPIC_API_KEY").ok())
-    .filter(|value| !value.trim().is_empty())
-    .ok_or("先に API キーを設定してください")?;
+  let key = credentials::resolve_key(&state).await?;
   let model = match model.as_str() {
     "claude-haiku-5-5" => "claude-haiku-5-5",
     _ => "claude-sonnet-5-5",
@@ -178,12 +154,12 @@ async fn export_pdf(window: tauri::WebviewWindow, path: String, page_size: Strin
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
-    .manage(ClaudeKey::default())
+    .manage(credentials::ClaudeKey::default())
     .manage(agent::AgentState::default())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_opener::init())
-    .invoke_handler(tauri::generate_handler![initial_file, move_to_trash, export_pdf, claude_key_status, set_claude_key, ask_claude, agent::run_document_agent, agent::apply_agent_edits, agent::discard_agent_run])
+    .invoke_handler(tauri::generate_handler![initial_file, move_to_trash, export_pdf, credentials::claude_key_status, credentials::set_claude_key, credentials::clear_claude_key, ask_claude, agent::run_document_agent, agent::apply_agent_edits, agent::discard_agent_run])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -198,3 +174,4 @@ pub fn run() {
     .expect("error while building tauri application");
 }
 mod agent;
+mod credentials;

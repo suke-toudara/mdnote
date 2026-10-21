@@ -198,7 +198,7 @@
       </label>
       <label class="setting-row"><span>Enter で改行する</span><input id="hard-break-enter" type="checkbox" /></label>
       <label class="setting-row"><span>自動保存</span><input id="settings-autosave" type="checkbox" /></label>
-      <fieldset class="chat-key-settings"><legend>チャット · Claude</legend><label for="claude-key">Claude API キー</label><div class="claude-key-row"><input id="claude-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-..." /><button id="claude-save-key" type="button">設定</button></div><div id="claude-key-status" class="setting-note">キーはアプリの起動中だけ保持します。</div></fieldset>
+      <fieldset class="chat-key-settings"><legend>チャット · Claude</legend><label for="claude-key">Claude API キー</label><div class="claude-key-row"><input id="claude-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-..." /><button id="claude-save-key" type="button">保存する</button></div><div class="chat-key-actions"><button id="claude-session-key" type="button">今回だけ使う</button><button id="claude-clear-key" type="button">保存したキーを削除</button></div><div id="claude-key-status" class="setting-note" aria-live="polite">キーの状態を確認しています。</div><p class="setting-note">「保存する」は Linux のシステムキーチェーンに保存します。mdnote の設定ファイルには記録しません。一時利用では、以前保存したキーは残ります。</p></fieldset>
       <div class="dialog-actions"><button id="settings-close" type="button">閉じる</button></div>
     </dialog>
     <dialog id="shortcuts-dialog" class="diff-dialog" aria-labelledby="shortcuts-title">

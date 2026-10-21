@@ -15,7 +15,7 @@ Markdown の見た目を確認しながら、そのまま編集できるエデ�
 
 ## チャットを使う
 
-画面右上の「チャット」からパネルを開き、「設定」で [Claude Console](https://platform.claude.com/) の API キーを登録します。現在の接続先は Claude です。キーはアプリの起動中だけ保持し、終了すると消去します。環境変数 `ANTHROPIC_API_KEY` も使えます。ブラウザ版では利用できません。
+画面右上の「チャット」からパネルを開き、「設定」で [Claude Console](https://platform.claude.com/) の API キーを登録します。「保存する」を押すと Linux のシステムキーチェーンに保存し、次回起動時にも使えます。「今回だけ使う」を選ぶと終了時に消去します。保存したキーは設定から削除できます。キーチェーンに接続できない環境では一時利用を選べます。環境変数 `ANTHROPIC_API_KEY` も使えます。ブラウザ版では利用できません。
 
 質問は「送信」、文書の編集依頼は「変更案を作る」を押してください。送信時には現在の文書全体が Claude API に渡されます。変更案は内容を確認してから「文書に適用」を押すまで反映されません。API の利用には、設定したキーの所属組織のクレジットが使われます。
 
@@ -28,7 +28,7 @@ Markdown の見た目を確認しながら、そのまま編集できるエデ�
 - **deb**：Ubuntu・Debian 系向け。`sudo apt install ./ファイル名.deb` でインストールし、アプリ一覧から起動します。
 - **AppImage**：`chmod +x ./ファイル名.AppImage` で実行権限を付け、`./ファイル名.AppImage` で起動します。
 
-初回リリースは準備中です。公開後は、リリースの説明で対応 OS と CPU を確認してください。詳しい操作や更新方法は[インストールと起動](https://suke-toudara.github.io/mdnote/01-install.html)にまとめています。
+リリースの説明で対応 OS と CPU を確認してください。詳しい操作や更新方法は[インストールと起動](https://suke-toudara.github.io/mdnote/01-install.html)にまとめています。
 
 ## 開発する
 
@@ -51,7 +51,7 @@ npm run app:build:appimage # AppImage のみ作成
 
 ## 配布する
 
-バージョンを `package.json`・`package-lock.json`・`src-tauri/Cargo.toml`・`src-tauri/Cargo.lock`・`src-tauri/tauri.conf.json` で揃え、`v0.1.0` のようなタグを push すると、GitHub Actions が Linux x86_64 向けの deb と AppImage を作り、GitHub Releases の下書きに添付します。対応環境で動作を確認し、変更内容を記載して公開してください。初回の公開時には、この README とガイドの「初回リリースは準備中」の案内も更新します。
+バージョンを `package.json`・`package-lock.json`・`src-tauri/Cargo.toml`・`src-tauri/Cargo.lock`・`src-tauri/tauri.conf.json` で揃え、`v0.1.0` のようなタグを push すると、GitHub Actions が Linux x86_64 向けの deb と AppImage を作り、GitHub Releases の下書きに添付します。対応環境で動作を確認し、変更内容を記載して公開してください。
 
 ## ガイドを更新する
 

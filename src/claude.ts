@@ -5,6 +5,7 @@ import { isTauri } from './platform';
 
 type DocumentSnapshot = { id: number; name: string; markdown: string };
 type WorkspaceStatus = { folder: string | null; dirtyPaths: string[] };
+type KeyStatus = { source: 'keychain' | 'session' | 'environment' | 'none'; keychainError: boolean };
 export type AgentProposal = { path: string; original: string | null; content: string };
 type AgentRun = { id: number; message: string; steps: string[]; proposals: AgentProposal[] };
 
@@ -127,22 +128,46 @@ export function setupClaude(
     edit.disabled = true;
     agentButton.disabled = true;
     (document.getElementById('claude-save-key') as HTMLButtonElement).disabled = true;
+    (document.getElementById('claude-session-key') as HTMLButtonElement).disabled = true;
+    (document.getElementById('claude-clear-key') as HTMLButtonElement).disabled = true;
     return;
   }
 
-  void invoke<boolean>('claude_key_status').then((ready) => {
-    keyStatus.textContent = ready ? 'API キーを設定済みです。アプリ終了時に消去されます。' : 'API キーを設定してください。キーは起動中だけ保持します。';
-    chatKeyState.textContent = ready ? '接続先: Claude · API キー設定済み' : 'Claude API キーは「設定」から登録できます。';
-  }).catch(() => { keyStatus.textContent = 'API キーの状態を確認できませんでした。'; });
-
-  document.getElementById('claude-save-key')!.addEventListener('click', async () => {
+  async function refreshKeyStatus() {
     try {
-      const clearing = !keyInput.value.trim();
-      await invoke('set_claude_key', { key: keyInput.value });
+      const status = await invoke<KeyStatus>('claude_key_status');
+      keyStatus.textContent = {
+        keychain: 'システムキーチェーンに保存済みです。次回も使えます。',
+        session: '今回の起動中だけ利用します。',
+        environment: '環境変数 ANTHROPIC_API_KEY を使用しています。',
+        none: status.keychainError ? 'キーチェーンを利用できません。解除するか「今回だけ使う」を選んでください。' : 'API キーを入力して「保存する」を押してください。',
+      }[status.source];
+      chatKeyState.textContent = status.source === 'none' ? 'Claude API キーは「設定」から登録できます。' : '接続先: Claude · API キー設定済み';
+    } catch (error) {
+      keyStatus.textContent = `API キーの状態を確認できませんでした: ${String(error)}`;
+    }
+  }
+
+  void refreshKeyStatus();
+
+  async function saveKey(persist: boolean) {
+    if (!keyInput.value.trim()) { keyStatus.textContent = 'Claude API キーを入力してください。'; return; }
+    try {
+      await invoke('set_claude_key', { key: keyInput.value, persist });
       keyInput.value = '';
-      const ready = await invoke<boolean>('claude_key_status');
-      keyStatus.textContent = clearing ? '入力した API キーを消去しました。' : 'API キーを設定しました。アプリ終了時に消去されます。';
-      chatKeyState.textContent = ready ? '接続先: Claude · API キー設定済み' : 'Claude API キーは「設定」から登録できます。';
+      await refreshKeyStatus();
+    } catch (error) {
+      keyStatus.textContent = String(error);
+    }
+  }
+
+  document.getElementById('claude-save-key')!.addEventListener('click', () => void saveKey(true));
+  document.getElementById('claude-session-key')!.addEventListener('click', () => void saveKey(false));
+  document.getElementById('claude-clear-key')!.addEventListener('click', async () => {
+    try {
+      await invoke('clear_claude_key');
+      keyInput.value = '';
+      await refreshKeyStatus();
     } catch (error) {
       keyStatus.textContent = String(error);
     }

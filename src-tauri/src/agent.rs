@@ -1,4 +1,4 @@
-use crate::ClaudeKey;
+use crate::credentials::{self, ClaudeKey};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashSet;
@@ -188,9 +188,7 @@ pub async fn run_document_agent(
   if question.trim().is_empty() || question.len() > 10_000 { return Err("依頼は 1〜10,000 文字で入力してください".into()); }
   if history.len() > 8 || history.iter().any(|turn| turn.content.len() > 10_000) { return Err("会話履歴が長すぎます".into()); }
   let mut workspace = Workspace::new(&folder)?;
-  let key = key_state.0.lock().map_err(|_| "API キーを読み込めませんでした".to_string())?
-    .clone().or_else(|| std::env::var("ANTHROPIC_API_KEY").ok())
-    .filter(|value| !value.trim().is_empty()).ok_or("先に API キーを設定してください")?;
+  let key = credentials::resolve_key(&key_state).await?;
   let model = match model.as_str() { "claude-haiku-5-5" => "claude-haiku-5-5", _ => "claude-sonnet-5-5" };
   let tools = json!([
     {"name":"list_files","description":"開いたフォルダ内の Markdown とテキストファイルの相対パス一覧。隠しファイルと大きなフォルダは除外。","input_schema":{"type":"object","properties":{}}},
