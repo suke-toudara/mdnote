@@ -15,6 +15,7 @@ import lightTheme from '@milkdown/crepe/theme/frame.css?inline';
 import darkTheme from '@milkdown/crepe/theme/frame-dark.css?inline';
 import './style.css';
 import { FileTree } from './filetree';
+import { setupClaude } from './claude';
 import { setupLinks, slugify } from './links';
 import { EditorTarget, FindBar, SourceTarget } from './find';
 import { parseHeadings, renderOutline, type Heading } from './outline';
@@ -586,6 +587,17 @@ function flush() {
   if (pendingApply !== undefined) applyToEditor();
   if (mode !== 'source') syncFromEditor();
 }
+
+setupClaude(
+  () => { flush(); return { id: cur.id, name: cur.doc.name, markdown: cur.markdown }; },
+  (markdown) => {
+    cur.markdown = markdown;
+    source.value = markdown;
+    applyToEditor(true);
+    setDirty(cur, true);
+    onContentChanged();
+  },
+);
 
 source.addEventListener('input', () => {
   cur.markdown = source.value;

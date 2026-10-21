@@ -52,6 +52,7 @@
           </div>
         </div>
         <div class="toolbar-actions toolbar-preferences">
+          <button id="btn-claude" type="button" aria-expanded="false" aria-controls="claude-panel" title="チャットを開く">チャット</button>
           <button id="btn-autosave" class="autosave-btn" title="自動保存">自動保存</button>
           <button id="btn-settings" title="表示と編集の設定">設定</button>
           <button id="btn-shortcuts" title="ショートカット一覧">?</button>
@@ -126,6 +127,19 @@
           </section>
         </main>
       </div>
+      <aside id="claude-panel" class="claude-panel" aria-label="チャット" hidden>
+        <div class="claude-head"><strong>チャット</strong><button id="claude-close" type="button" aria-label="チャットを閉じる">×</button></div>
+        <div class="claude-settings">
+          <label for="claude-key">Claude API キー</label>
+          <div class="claude-key-row"><input id="claude-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-..." /><button id="claude-save-key" type="button">設定</button></div>
+          <div id="claude-key-status" class="claude-hint">API キーを設定してください。キーは起動中だけ保持します。</div>
+          <label for="claude-model">モデル</label>
+          <select id="claude-model"><option value="claude-sonnet-5-5">Sonnet 5.5</option><option value="claude-haiku-5-5">Haiku 5.5</option></select>
+        </div>
+        <div id="claude-messages" class="claude-messages" aria-live="polite"><p class="claude-hint">現在の文書について質問したり、変更案を作成したりできます。送信時に文書全体を Claude に渡します。</p></div>
+        <div id="claude-proposal" class="claude-proposal" hidden><strong>変更案</strong><textarea id="claude-proposal-text" readonly></textarea><div class="claude-proposal-actions"><button id="claude-apply" type="button">文書に適用</button><button id="claude-discard" type="button">破棄</button></div></div>
+        <div class="claude-compose"><label for="claude-question">メッセージ</label><textarea id="claude-question" placeholder="文書について質問する" rows="4"></textarea><div class="claude-compose-actions"><button id="claude-edit" type="button">変更案を作る</button><button id="claude-send" type="button">送信</button></div></div>
+      </aside>
     </div>
 
     <footer class="statusbar">

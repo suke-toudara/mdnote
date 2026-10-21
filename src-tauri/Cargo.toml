@@ -27,6 +27,7 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 trash = "5"
 tauri-plugin-opener = "2"
+reqwest = { version = "0.13", features = ["json"] }
 
 # PDF の書き出しに WebKitGTK の印刷機能を直接使う (Tauri が使っているものと同じ版)
 [target.'cfg(target_os = "linux")'.dependencies]

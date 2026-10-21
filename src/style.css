@@ -425,6 +425,56 @@ button.active {
   position: relative;
 }
 
+/* チャット */
+.claude-panel {
+  width: clamp(300px, 29vw, 420px);
+  flex: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--toolbar-bg);
+}
+.claude-panel[hidden] { display: none; }
+.claude-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.claude-head button { border: 0; background: transparent; font-size: 20px; line-height: 1; }
+.claude-settings, .claude-compose { display: grid; gap: 7px; padding: 12px; }
+.claude-settings { border-bottom: 1px solid var(--border); }
+.claude-panel label { color: var(--muted); font-size: 12px; }
+.claude-panel :is(input, textarea, select) {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 13px;
+}
+.claude-key-row { display: flex; gap: 6px; }
+.claude-key-row button { flex: none; }
+.claude-hint { color: var(--muted); font-size: 12px; line-height: 1.55; margin: 0; }
+.claude-messages { flex: 1; min-height: 80px; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.claude-message { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; font-size: 13px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
+.claude-user { align-self: flex-end; background: var(--hover); }
+.claude-error { color: var(--danger); }
+.claude-proposal { padding: 10px 12px; border-top: 1px solid var(--border); }
+.claude-proposal[hidden] { display: none; }
+.claude-proposal strong { font-size: 12px; }
+.claude-proposal textarea { height: min(25vh, 220px); margin-top: 6px; resize: vertical; font-family: ui-monospace, monospace; }
+.claude-proposal-actions { display: flex; gap: 6px; margin-top: 6px; }
+.claude-compose { border-top: 1px solid var(--border); }
+.claude-compose textarea { resize: vertical; min-height: 80px; }
+.claude-compose-actions { display: flex; justify-content: flex-end; gap: 7px; }
+.claude-compose-actions #claude-send { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+
 /* ---- 目次 ---- */
 
 .outline {
@@ -1059,6 +1109,7 @@ body.outline-hidden .outline {
 .setting-note { color: var(--muted); font-size: 12px; }
 
 @media (max-width: 720px) {
+  .claude-panel { position: absolute; z-index: 31; right: 0; top: 0; bottom: 0; width: min(400px, 94vw); box-shadow: -6px 0 20px rgba(0, 0, 0, .2); }
   .wysiwyg-pane .milkdown .ProseMirror {
     padding: 16px;
   }
@@ -1127,6 +1178,7 @@ body.link-mod .ProseMirror a[href] {
   .notice,
   .find-bar,
   .source-pane,
+  .claude-panel,
   .context-menu,
   dialog,
   .milkdown-block-handle,
