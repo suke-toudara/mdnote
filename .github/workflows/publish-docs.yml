@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'docs-src/**'
+      - 'scripts/style_docs.py'
       - '.github/workflows/publish-docs.yml'
   workflow_dispatch:
 
@@ -33,7 +34,9 @@ jobs:
           cargo install --path . --root "$RUNNER_TEMP/mkbook-bin"
           echo "$RUNNER_TEMP/mkbook-bin/bin" >> "$GITHUB_PATH"
       - name: Build book
-        run: mkbook build -i docs-src -o site
+        run: |
+          mkbook build -i docs-src -o site
+          python3 scripts/style_docs.py site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

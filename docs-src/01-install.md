@@ -2,36 +2,38 @@
 title = "インストールと起動"
 ---
 
-# インストールと起動
+## 事前に用意するもの
 
-## 用意するもの
+Linux でソースコードから起動するには、Node.js と npm、Rust の安定版、Tauri 2 の開発に必要なシステムライブラリを用意します。必要なライブラリは Linux の種類によって異なります。[Tauri 公式のセットアップ手順](https://v2.tauri.app/start/prerequisites/#linux)を確認してください。
 
-Linux デスクトップでは、Node.js と npm、Rust の stable toolchain、Tauri 2 の Linux 開発用ライブラリが必要です。詳しい OS 依存パッケージは [Tauri の Linux prerequisites](https://v2.tauri.app/start/prerequisites/#linux)を確認してください。
+## アプリを起動する
 
-## 起動
-
-リポジトリを取得して、プロジェクトのディレクトリで起動します。
+ターミナルで次のコマンドを実行します。
 
 ```sh
-git clone git@github.com:suke-toudara/mdnote.git
+git clone https://github.com/suke-toudara/mdnote.git
 cd mdnote
 ./start.sh
 ```
 
-初回起動時は依存パッケージとアプリをビルドします。以後、ソースが変更されていなければビルド済みアプリを起動します。
+初回は npm パッケージのインストールとアプリのビルドを行うため、起動までに時間がかかります。次回からは、ソースコードに変更がなければビルド済みのアプリを起動します。
 
-Markdown ファイルを指定して起動することもできます。
+ファイルを指定して開くこともできます。
 
 ```sh
 ./start.sh ~/Documents/notes.md
 ```
 
-開発中は `./start.sh --dev` を使うと、ソース変更を反映する開発モードで起動します。ビルドだけ行う場合は `./start.sh --build` です。
-
-## アプリ一覧に登録
+## アプリ一覧に登録する
 
 ```sh
 ./install.sh
 ```
 
-ユーザー単位でアプリ一覧と Markdown ファイルの関連付けに登録します。登録解除は `./install.sh --uninstall` です。
+現在のユーザーのアプリ一覧に登録します。Markdown ファイルを右クリックしたときの「別のアプリケーションで開く」からも選べるようになります。アイコンの作成には ImageMagick の `convert` コマンドが必要です。
+
+登録を解除する場合は `./install.sh --uninstall` を実行します。登録後にプロジェクトのフォルダを移動した場合は、新しい場所で登録し直してください。
+
+## 開発用の起動方法
+
+`./start.sh --dev` は、ソースコードの変更を反映しながら開発するための起動方法です。アプリのビルドだけを行いたい場合は `./start.sh --build` を使います。
