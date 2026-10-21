@@ -29,6 +29,7 @@ Node.js・npm、Rust、[Tauri 2 の開発用ライブラリ](https://v2.tauri.ap
 git clone https://github.com/suke-toudara/mdnote.git
 cd mdnote
 npm ci
+./build.sh                 # ローカル版をビルドしてアプリ一覧に反映
 npm run app                # 開発モードで起動
 npm run app:build          # deb と AppImage を作成
 npm run app:build:deb      # deb のみ作成

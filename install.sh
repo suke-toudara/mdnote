@@ -34,7 +34,12 @@ mkdir -p "$APPS"
 rm -f "$ICONS/scalable/apps/mdnote.svg"
 for s in "${SIZES[@]}"; do
   mkdir -p "$ICONS/${s}x${s}/apps"
-  convert src-tauri/icons/icon-source.png -resize "${s}x${s}" "$ICONS/${s}x${s}/apps/mdnote.png"
+  case "$s" in
+    256) icon=src-tauri/icons/128x128@2x.png ;;
+    512) icon=src-tauri/icons/icon.png ;;
+    *) icon="src-tauri/icons/${s}x${s}.png" ;;
+  esac
+  install -m 644 "$icon" "$ICONS/${s}x${s}/apps/mdnote.png"
 done
 
 cat >"$DESKTOP" <<EOF
