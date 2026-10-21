@@ -20,6 +20,10 @@
                 <button id="btn-recent" aria-expanded="false" aria-controls="recent-menu">最近開いたファイル</button>
                 <div id="recent-menu" class="recent-menu" hidden></div>
               </div>
+              <div class="recent-wrap" id="recent-folders-wrap" hidden>
+                <button id="btn-recent-folders" aria-expanded="false" aria-controls="recent-folders-menu">最近開いたフォルダ</button>
+                <div id="recent-folders-menu" class="recent-menu" hidden></div>
+              </div>
               <div class="menu-divider"></div>
               <button id="btn-save" title="保存 (Ctrl+S)">保存</button>
               <button id="btn-save-as" title="名前を付けて保存 (Ctrl+Shift+S)">名前を付けて保存</button>
@@ -159,10 +163,26 @@
           <option value="sans">ゴシック</option>
           <option value="serif">明朝</option>
           <option value="system">システム標準</option>
+          <option value="ipa-gothic">IPA ゴシック</option>
+          <option value="ipa-mincho">IPA 明朝</option>
+          <option value="mono">等幅</option>
         </select>
       </label>
-      <p class="setting-note">プレビュー本文に適用します。Markdown ファイルの内容は変わりません。</p>
-      <div class="setting-row"><span>テーマ</span><button id="btn-theme" type="button">切り替える</button></div>
+      <label class="setting-row" for="font-size-choice">本文の文字サイズ
+        <select id="font-size-choice"><option value="small">小</option><option value="normal">標準</option><option value="large">大</option><option value="xlarge">特大</option></select>
+      </label>
+      <p class="setting-note">フォントと文字サイズはプレビュー本文の表示に適用します。Markdown ファイルの内容は変わりません。</p>
+      <label class="setting-row" for="theme-choice">テーマ
+        <select id="theme-choice">
+          <option value="system">システムに合わせる</option>
+          <option value="light">ライト</option>
+          <option value="paper">ペーパー</option>
+          <option value="sepia">セピア</option>
+          <option value="dark">ダーク</option>
+          <option value="graphite">グラファイト</option>
+          <option value="ocean">ディープブルー</option>
+        </select>
+      </label>
       <label class="setting-row"><span>Enter で改行する</span><input id="hard-break-enter" type="checkbox" /></label>
       <label class="setting-row"><span>自動保存</span><input id="settings-autosave" type="checkbox" /></label>
       <div class="dialog-actions"><button id="settings-close" type="button">閉じる</button></div>

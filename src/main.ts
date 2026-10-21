@@ -6,6 +6,10 @@ import { insert, replaceAll } from '@milkdown/kit/utils';
 import '@fontsource/m-plus-rounded-1c/400.css';
 import '@fontsource/m-plus-rounded-1c/500.css';
 import '@fontsource/m-plus-rounded-1c/700.css';
+import '@fontsource/noto-sans-jp/400.css';
+import '@fontsource/noto-sans-jp/700.css';
+import '@fontsource/noto-serif-jp/400.css';
+import '@fontsource/noto-serif-jp/700.css';
 import '@milkdown/crepe/theme/common/style.css';
 import lightTheme from '@milkdown/crepe/theme/frame.css?inline';
 import darkTheme from '@milkdown/crepe/theme/frame-dark.css?inline';
@@ -38,7 +42,7 @@ import {
   setWindowTitle,
   storeImage,
 } from './platform';
-import { addRecent, readDrafts, readRecent, readSession, removeRecent, writeDrafts, writeSession, type Draft, type RecentFile } from './session';
+import { addRecent, addRecentFolder, readDrafts, readRecent, readRecentFolders, readSession, removeRecent, removeRecentFolder, writeDrafts, writeSession, type Draft, type RecentFile } from './session';
 import { brInTableCells, excelLikeTable, selectionInTable } from './table-edit';
 import { setupTableMenu } from './table-menu';
 import { defaultHandlers } from 'mdast-util-to-markdown';
@@ -47,11 +51,11 @@ import { offsetTopsOf, replaceRange, scrollToPos, setupSourceEditor } from './so
 import { looksLikeTsv, tsvToMarkdownTable } from './tsv';
 
 type Mode = 'wysiwyg' | 'split' | 'source';
-type Theme = 'system' | 'light' | 'dark';
+type Theme = 'system' | 'light' | 'paper' | 'sepia' | 'dark' | 'graphite' | 'ocean';
 type Panel = 'outline' | 'files';
 const MODES: Mode[] = ['wysiwyg', 'split', 'source'];
-const THEMES: Theme[] = ['system', 'light', 'dark'];
-const THEME_LABEL: Record<Theme, string> = { system: 'システムに合わせる', light: 'ライト', dark: 'ダーク' };
+const THEMES: Theme[] = ['system', 'light', 'paper', 'sepia', 'dark', 'graphite', 'ocean'];
+const THEME_LABEL: Record<Theme, string> = { system: 'システムに合わせる', light: 'ライト', paper: 'ペーパー', sepia: 'セピア', dark: 'ダーク', graphite: 'グラファイト', ocean: 'ディープブルー' };
 const UNTITLED = '無題.md';
 const AUTOSAVE_DELAY = 1500;
 
@@ -125,11 +129,14 @@ const outlineList = $('outline-list');
 const statusMessage = $('status-message');
 const statusCount = $('status-count');
 const docStats = $('doc-stats');
-const themeButton = $<HTMLButtonElement>('btn-theme');
+const themeChoice = $<HTMLSelectElement>('theme-choice');
+const fontSizeChoice = $<HTMLSelectElement>('font-size-choice');
 const fontChoice = $<HTMLSelectElement>('font-choice');
 const autosaveButton = $<HTMLButtonElement>('btn-autosave');
 const recentButton = $<HTMLButtonElement>('btn-recent');
 const recentMenu = $('recent-menu');
+const recentFoldersButton = $<HTMLButtonElement>('btn-recent-folders');
+const recentFoldersMenu = $('recent-folders-menu');
 const diffDialog = $<HTMLDialogElement>('diff-dialog');
 const notice = $('notice');
 const modeButtons = document.querySelectorAll<HTMLButtonElement>('.mode button');
@@ -199,11 +206,15 @@ tabs.push(cur);
 
 let mode: Mode = loadPref('mode', MODES, 'wysiwyg');
 let theme: Theme = loadPref('theme', THEMES, 'system');
-const FONTS = ['rounded', 'sans', 'serif', 'system'] as const;
+const FONTS = ['rounded', 'sans', 'serif', 'system', 'ipa-gothic', 'ipa-mincho', 'mono'] as const;
+const FONT_SIZES = ['small', 'normal', 'large', 'xlarge'] as const;
 let documentFont = loadPref('documentFont', FONTS, 'rounded');
+let documentFontSize = loadPref('documentFontSize', FONT_SIZES, 'normal');
 function applyDocumentFont() {
   document.documentElement.dataset.font = documentFont;
   fontChoice.value = documentFont;
+  document.documentElement.dataset.fontSize = documentFontSize;
+  fontSizeChoice.value = documentFontSize;
 }
 applyDocumentFont();
 let autosave = loadPref('autosave', ['on', 'off'] as const, 'on') === 'on';
@@ -229,8 +240,8 @@ const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 function applyTheme(forced?: 'light' | 'dark') {
   const resolved = forced ?? (theme === 'system' ? (darkQuery.matches ? 'dark' : 'light') : theme);
   document.documentElement.dataset.theme = resolved;
-  crepeTheme.textContent = resolved === 'dark' ? darkTheme : lightTheme;
-  themeButton.textContent = `テーマ: ${THEME_LABEL[theme]}`;
+  crepeTheme.textContent = ['dark', 'graphite', 'ocean'].includes(resolved) ? darkTheme : lightTheme;
+  themeChoice.value = theme;
 }
 
 darkQuery.addEventListener('change', () => applyTheme());
@@ -482,6 +493,42 @@ function renderRecent(files: RecentFile[] = readRecent()) {
 function closeRecent() {
   recentMenu.hidden = true;
   recentButton.setAttribute('aria-expanded', 'false');
+}
+
+function renderRecentFolders(paths: string[] = readRecentFolders()) {
+  recentFoldersMenu.replaceChildren();
+  if (!paths.length) {
+    const empty = document.createElement('span');
+    empty.className = 'recent-empty';
+    empty.textContent = '履歴はありません';
+    recentFoldersMenu.append(empty);
+    return;
+  }
+  for (const path of paths) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'recent-item';
+    button.title = path;
+    const name = document.createElement('span');
+    name.textContent = path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+    const location = document.createElement('span');
+    location.className = 'recent-folder-path';
+    location.textContent = path;
+    button.append(name, location);
+    button.addEventListener('click', () => {
+      closeRecentFolders();
+      void openFolder(path).catch((error) => {
+        renderRecentFolders(removeRecentFolder(path));
+        reportError(error);
+      });
+    });
+    recentFoldersMenu.append(button);
+  }
+}
+
+function closeRecentFolders() {
+  recentFoldersMenu.hidden = true;
+  recentFoldersButton.setAttribute('aria-expanded', 'false');
 }
 
 // ---- 同期 ----
@@ -965,9 +1012,17 @@ function setPanel(panel: Panel) {
 
 // reveal: サイドバーをファイル一覧に切り替えて表示する (起動時の復元では前回の表示のままにする)
 async function openFolder(folder: string, expanded: string[] = [], reveal = true) {
-  await fileTree.setFolder(folder, expanded);
+  const previous = fileTree.current;
+  const previousExpanded = fileTree.expandedDirs;
+  try {
+    await fileTree.setFolder(folder, expanded);
+  } catch (error) {
+    await fileTree.setFolder(previous, previousExpanded).catch(() => {});
+    throw error;
+  }
   $('folder-name').textContent = fileTree.folderName;
   $('folder-name').title = folder;
+  renderRecentFolders(addRecentFolder(folder));
   for (const id of ['btn-folder-refresh', 'btn-tree-new-file', 'btn-tree-new-folder']) $(id).hidden = false;
   fileTree.setActive(cur.doc.path);
   if (reveal) {
@@ -1346,6 +1401,8 @@ function setHardBreakEnter(value: boolean) {
 
 function openSettings() {
   fontChoice.value = documentFont;
+  fontSizeChoice.value = documentFontSize;
+  themeChoice.value = theme;
   $<HTMLInputElement>('hard-break-enter').checked = hardBreakEnter;
   $<HTMLInputElement>('settings-autosave').checked = autosave;
   $<HTMLDialogElement>('app-settings').showModal();
@@ -1361,8 +1418,8 @@ function openFind(withReplace: boolean) {
   findBar.open(withReplace, selected);
 }
 
-function cycleTheme() {
-  theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+function selectTheme(value: Theme) {
+  theme = value;
   savePref('theme', theme);
   applyTheme();
   showStatus(`テーマ: ${THEME_LABEL[theme]}`);
@@ -1379,20 +1436,30 @@ $('btn-tree-new-file').addEventListener('click', run(() => fileTree.newFile()));
 $('btn-tree-new-folder').addEventListener('click', run(() => fileTree.newFolder()));
 recentButton.addEventListener('click', () => {
   if (recentMenu.hidden) {
+    closeRecentFolders();
     renderRecent();
     recentMenu.hidden = false;
     recentButton.setAttribute('aria-expanded', 'true');
   } else closeRecent();
 });
+recentFoldersButton.addEventListener('click', () => {
+  if (recentFoldersMenu.hidden) {
+    closeRecent();
+    renderRecentFolders();
+    recentFoldersMenu.hidden = false;
+    recentFoldersButton.setAttribute('aria-expanded', 'true');
+  } else closeRecentFolders();
+});
 document.addEventListener('click', (e) => {
   if (!(e.target as HTMLElement).closest('#recent-wrap')) closeRecent();
+  if (!(e.target as HTMLElement).closest('#recent-folders-wrap')) closeRecentFolders();
 });
 $('btn-save').addEventListener('click', run(() => doSave()));
 $('btn-save-primary').addEventListener('click', run(() => doSave()));
 $('btn-save-as').addEventListener('click', run(() => doSave(cur, true)));
 $('btn-find').addEventListener('click', () => openFind(true));
 $('btn-outline').addEventListener('click', toggleSidebar);
-themeButton.addEventListener('click', cycleTheme);
+themeChoice.addEventListener('change', () => selectTheme(themeChoice.value as Theme));
 $('btn-pdf').addEventListener('click', run(doExportPdf));
 $('btn-html').addEventListener('click', exportHtml);
 $('btn-print').addEventListener('click', openExportSettings);
@@ -1410,6 +1477,11 @@ fontChoice.addEventListener('change', () => {
   savePref('documentFont', documentFont);
   applyDocumentFont();
 });
+fontSizeChoice.addEventListener('change', () => {
+  documentFontSize = fontSizeChoice.value as typeof documentFontSize;
+  savePref('documentFontSize', documentFontSize);
+  applyDocumentFont();
+});
 $<HTMLInputElement>('hard-break-enter').addEventListener('change', (e) => setHardBreakEnter((e.target as HTMLInputElement).checked));
 $<HTMLInputElement>('settings-autosave').addEventListener('change', (e) => setAutosave((e.target as HTMLInputElement).checked));
 autosaveButton.addEventListener('click', () => {
@@ -1422,11 +1494,11 @@ const toolbarMenus = [...document.querySelectorAll<HTMLDetailsElement>('.toolbar
 for (const menu of toolbarMenus) {
   menu.addEventListener('toggle', () => {
     if (menu.open) toolbarMenus.forEach((other) => { if (other !== menu) other.open = false; });
-    else closeRecent();
+    else { closeRecent(); closeRecentFolders(); }
   });
   menu.querySelector('.toolbar-menu-panel')?.addEventListener('click', (e) => {
     if (!(e.target as HTMLElement).closest('button')) return;
-    if ((e.target as HTMLElement).closest('#btn-recent')) return;
+    if ((e.target as HTMLElement).closest('#btn-recent, #btn-recent-folders')) return;
     menu.open = false;
   });
 }
@@ -1492,8 +1564,10 @@ narrowScreen.addEventListener('change', (event) => {
 });
 if (isTauri) {
   $('recent-wrap').hidden = false;
+  $('recent-folders-wrap').hidden = false;
   $('btn-open-folder').hidden = false;
   renderRecent();
+  renderRecentFolders();
 } else {
   $('tab-files').hidden = true;
   setPanel('outline');

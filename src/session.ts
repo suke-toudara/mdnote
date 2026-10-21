@@ -14,6 +14,7 @@ export interface RecentFile {
 const DRAFT_KEY = 'md-editor-draft';
 const DRAFTS_KEY = 'md-editor-drafts';
 const RECENT_KEY = 'md-editor-recent';
+const RECENT_FOLDERS_KEY = 'mdnote-recent-folders';
 const SESSION_KEY = 'md-editor-session';
 
 function isDraft(data: Partial<Draft> | null): data is Draft {
@@ -112,5 +113,27 @@ export function removeRecent(path: string): RecentFile[] {
   } catch {
     // 同上
   }
+  return list;
+}
+
+// 最近使ったフォルダ。文書の履歴とは独立して保持する。
+export function readRecentFolders(): string[] {
+  try {
+    const data: unknown = JSON.parse(localStorage.getItem(RECENT_FOLDERS_KEY) ?? '[]');
+    return Array.isArray(data) ? data.filter((path): path is string => typeof path === 'string' && path.length > 0).slice(0, 10) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addRecentFolder(path: string): string[] {
+  const list = [path, ...readRecentFolders().filter((item) => item !== path)].slice(0, 10);
+  try { localStorage.setItem(RECENT_FOLDERS_KEY, JSON.stringify(list)); } catch { /* 履歴が保存できなくても操作は続ける */ }
+  return list;
+}
+
+export function removeRecentFolder(path: string): string[] {
+  const list = readRecentFolders().filter((item) => item !== path);
+  try { localStorage.setItem(RECENT_FOLDERS_KEY, JSON.stringify(list)); } catch { /* 同上 */ }
   return list;
 }
