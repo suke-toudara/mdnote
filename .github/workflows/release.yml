@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   package:
@@ -35,6 +35,16 @@ jobs:
             throw new Error('タグとアプリのバージョンが一致していません');
           }
           JS
+      - name: Check existing release
+        id: release_status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if draft=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${GITHUB_REF_NAME}" --jq '.draft' 2>/dev/null); then
+            echo "draft=$draft" >> "$GITHUB_OUTPUT"
+          else
+            echo "draft=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
@@ -48,9 +58,11 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: mdnote ${{ github.ref_name }}
           releaseBody: |
-            Linux x86_64 向けの mdnote です。Ubuntu 22.04 でビルドしています。
-            Ubuntu・Debian 系では deb、ファイルから起動する場合は AppImage を選んでください。
-            公開前に対応環境での動作確認結果と変更内容を記載してください。
-          releaseDraft: true
+            mdnote の初回リリースです。Linux x86_64 向けの deb と AppImage を配布します。Ubuntu 22.04 でビルドしています。
+
+            Markdown の編集・プレビュー、PDF・HTML 書き出し、タブとフォルダ一覧、テーマとフォントの切り替えに対応しています。Claude API を使ったチャットでは、変更案を確認してから適用できます。API キーはシステムキーチェーンに保存できます。
+
+            Ubuntu・Debian 系では deb、ファイルから起動する場合は AppImage を選んでください。詳しくは [インストールガイド](https://suke-toudara.github.io/mdnote/01-install.html)をご覧ください。
+          releaseDraft: ${{ steps.release_status.outputs.draft }}
           prerelease: false
           args: --bundles deb,appimage
