@@ -1,0 +1,1094 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #656d76;
+  --border: #d0d7de;
+  --toolbar-bg: #f6f8fa;
+  --accent: #0969da;
+  --accent-fg: #ffffff;
+  --source-bg: #fbfbfb;
+  --hover: #eaeef2;
+  --mark: rgba(255, 200, 0, 0.35);
+  --mark-current: rgba(255, 140, 0, 0.7);
+  --danger: #d1242f;
+  --font-rounded: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
+  color-scheme: light;
+  font-family: var(--font-rounded);
+}
+
+:root[data-theme="dark"] {
+  /* VS Code の Dark+ に近い配色 */
+  --bg: #1e1e1e;
+  --fg: #d4d4d4;
+  --muted: #9d9d9d;
+  --border: #3c3c3c;
+  --toolbar-bg: #252526;
+  --accent: #0e639c;
+  --source-bg: #1e1e1e;
+  --hover: #2a2d2e;
+  --mark: rgba(234, 92, 0, 0.33);
+  --mark-current: rgba(81, 92, 106, 0.9);
+  --danger: #f48771;
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] .toolbar {
+  background: #3c3c3c;
+  border-bottom-color: #2b2b2b;
+}
+
+:root[data-theme="dark"] .toolbar button:not(.active) {
+  background: #3c3c3c;
+  border-color: #5a5a5a;
+  color: #cccccc;
+}
+
+:root[data-theme="dark"] .toolbar button:not(.active):hover {
+  background: #4a4a4a;
+}
+
+:root[data-theme="dark"] .statusbar {
+  background: #007acc;
+  border-top-color: #007acc;
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .statusbar .error {
+  color: #ffd2cc;
+}
+
+:root[data-theme="dark"] .outline-item.current {
+  color: #ffffff;
+  background: #37373d;
+}
+
+:root[data-theme="dark"] .wysiwyg-pane .milkdown {
+  --crepe-color-background: #1e1e1e;
+  --crepe-color-on-background: #d4d4d4;
+  --crepe-color-surface: #252526;
+  --crepe-color-surface-low: #2d2d30;
+  --crepe-color-on-surface: #cccccc;
+  --crepe-color-on-surface-variant: #9d9d9d;
+  --crepe-color-outline: #5a5a5a;
+  --crepe-color-primary: #3794ff;
+  --crepe-color-secondary: #264f78;
+  --crepe-color-on-secondary: #ffffff;
+  --crepe-color-inverse: #d4d4d4;
+  --crepe-color-on-inverse: #1e1e1e;
+  --crepe-color-inline-code: #ce9178;
+  --crepe-color-error: #f48771;
+  --crepe-color-hover: #2a2d2e;
+  --crepe-color-selected: #264f78;
+  --crepe-color-inline-area: #2d2d30;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+
+.icon-btn {
+  min-width: 30px;
+  padding: 4px 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- ツールバー ---- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.toolbar .group {
+  display: flex;
+  gap: 4px;
+}
+
+.recent-wrap {
+  position: relative;
+}
+
+.recent-wrap[hidden],
+.recent-menu[hidden] {
+  display: none;
+}
+
+.recent-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  left: 0;
+  width: min(340px, 85vw);
+  padding: 6px;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+.recent-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+}
+
+.recent-item:hover {
+  background: var(--hover);
+}
+
+.recent-empty {
+  display: block;
+  padding: 6px 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.filename {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dirty {
+  color: var(--danger);
+  margin-right: 4px;
+}
+
+/* ---- 外部変更の通知 ---- */
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: #fff8c5;
+  color: #3b2300;
+  border-bottom: 1px solid #d4a72c;
+}
+
+.notice[hidden] {
+  display: none;
+}
+
+.notice .spacer {
+  flex: 1;
+}
+
+:root[data-theme="dark"] .notice {
+  background: #4b3a14;
+  color: #f2e5c4;
+  border-bottom-color: #7a5f1c;
+}
+
+.recovery-dialog,
+.diff-dialog {
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  max-width: min(900px, calc(100vw - 32px));
+}
+
+.recovery-dialog::backdrop,
+.diff-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.recovery-dialog {
+  width: min(480px, calc(100vw - 32px));
+  padding: 20px;
+}
+
+.dialog-actions,
+.diff-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.diff-dialog {
+  width: min(900px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 16px;
+}
+
+.diff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.diff-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.diff-dialog p {
+  margin: 12px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.diff-content {
+  margin: 0;
+  max-height: min(60vh, 600px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--source-bg);
+  font: 13px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre;
+}
+
+.diff-content span {
+  box-decoration-break: clone;
+}
+
+.diff-added {
+  background: color-mix(in srgb, #2da44e 24%, var(--source-bg));
+}
+
+.diff-removed {
+  background: color-mix(in srgb, #cf222e 24%, var(--source-bg));
+}
+
+/* ---- 本体 ---- */
+
+.body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  position: relative;
+}
+
+/* ---- 目次 ---- */
+
+.outline {
+  width: 240px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--toolbar-bg);
+  overflow: auto;
+  padding: 8px 0;
+}
+
+body.outline-hidden .outline {
+  display: none;
+}
+
+/* ---- サイドバーの切り替え (目次 / ファイル) ---- */
+
+.outline {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 8px 8px;
+}
+
+.sidebar-tabs button {
+  flex: 1;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.sidebar-tabs button[hidden] {
+  display: none;
+}
+
+#panel-outline,
+#panel-files {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+#panel-files {
+  display: flex;
+  flex-direction: column;
+}
+
+#panel-outline[hidden],
+#panel-files[hidden] {
+  display: none;
+}
+
+.files-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 6px 12px;
+}
+
+.folder-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tree,
+.file-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.file-tree {
+  flex: 1;
+  overflow: auto;
+  padding: 0 6px;
+}
+
+.tree-dir,
+.tree-file {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  padding: 3px 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-dir {
+  color: var(--muted);
+}
+
+.tree-dir:hover,
+.tree-file:hover {
+  background: var(--hover);
+}
+
+.tree-file.current {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+:root[data-theme="dark"] .tree-file.current {
+  color: #ffffff;
+  background: #37373d;
+}
+
+.tree-dir.selected,
+.tree-file.selected {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.file-tree:not(:focus-within) .selected {
+  outline-color: var(--border);
+}
+
+.files-head .icon-btn {
+  min-width: 26px;
+  height: 24px;
+  padding: 2px 4px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.files-head .icon-btn:hover {
+  background: var(--hover);
+}
+
+.files-head .icon-btn[hidden] {
+  display: none;
+}
+
+.tree-input {
+  display: block;
+  width: calc(100% - 12px);
+  font: inherit;
+  font-size: 13px;
+  padding: 2px 6px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.tree-input-error {
+  margin: 2px 8px 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  color: #fff;
+  background: var(--danger);
+  border-radius: 4px;
+}
+
+.tree-input-error[hidden] {
+  display: none;
+}
+
+.file-tree:focus {
+  outline: none;
+}
+
+.tree-empty {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 4px 12px;
+}
+
+.files-actions {
+  padding: 8px;
+}
+
+.files-actions button {
+  width: 100%;
+}
+
+/* ---- タブ ---- */
+
+.tab-bar {
+  display: flex;
+  height: 34px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: thin;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 0 6px 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.tab:hover {
+  background: var(--hover);
+}
+
+.tab.active {
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-close {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  line-height: 1;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 15px;
+  visibility: hidden;
+}
+
+.tab:hover .tab-close,
+.tab.active .tab-close {
+  visibility: visible;
+}
+
+.tab-close:hover {
+  background: var(--border);
+}
+
+/* 未保存のタブは × の代わりに ● を出し、ホバーで × に戻す (VS Code と同じ) */
+.tab.dirty .tab-close {
+  visibility: visible;
+  font-size: 0;
+}
+
+.tab.dirty .tab-close::before {
+  content: '●';
+  font-size: 10px;
+}
+
+.tab.dirty .tab-close:hover {
+  font-size: 15px;
+}
+
+.tab.dirty .tab-close:hover::before {
+  content: '';
+}
+
+/* ---- 右クリックメニュー ---- */
+
+.context-menu {
+  position: fixed;
+  z-index: 100;
+  min-width: 200px;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.context-menu[hidden] {
+  display: none;
+}
+
+:root[data-theme="dark"] .context-menu {
+  background: #252526;
+  border-color: #454545;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+}
+
+.menu-item:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.menu-item:disabled {
+  color: var(--muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.menu-item kbd {
+  font: inherit;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.menu-separator {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 2px;
+}
+
+.autosave-btn::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  vertical-align: 1px;
+}
+
+.autosave-btn.on::before {
+  background: #3fb950;
+}
+
+.outline-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 4px 12px 8px;
+}
+
+.outline ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 6px;
+}
+
+.outline-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  padding: 4px 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.outline-item:hover {
+  background: var(--hover);
+}
+
+.outline-item.current {
+  color: var(--accent);
+  font-weight: 600;
+  background: transparent;
+}
+
+.outline-item.level-1 {
+  font-weight: 600;
+}
+
+.outline-empty {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 4px 12px;
+}
+
+/* ---- 検索バー ---- */
+
+.find-bar {
+  position: absolute;
+  top: 42px;
+  right: 24px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.find-bar[hidden] {
+  display: none;
+}
+
+.find-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.replace-row {
+  display: none;
+}
+
+.find-bar.with-replace .replace-row {
+  display: flex;
+}
+
+.find-bar input {
+  width: 240px;
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+}
+
+.find-bar input:focus {
+  border-color: var(--accent);
+}
+
+.find-bar input.invalid {
+  border-color: var(--danger);
+}
+
+.find-bar button {
+  padding: 3px 8px;
+}
+
+.find-count {
+  min-width: 56px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+::highlight(find-all) {
+  background-color: var(--mark);
+}
+
+::highlight(find-current) {
+  background-color: var(--mark-current);
+}
+
+/* ---- 編集領域 ---- */
+
+.workspace {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.pane {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+}
+
+.source-pane {
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  background: var(--source-bg);
+}
+
+.mode-split .source-pane {
+  border-right: 1px solid var(--border);
+}
+
+#source,
+.source-backdrop {
+  padding: 24px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono CJK JP", monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  tab-size: 2;
+}
+
+#source {
+  flex: 1;
+  width: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--fg);
+  position: relative;
+  z-index: 1;
+}
+
+.source-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  color: transparent;
+  pointer-events: none;
+}
+
+.source-backdrop mark {
+  color: transparent;
+  background: var(--mark);
+  border-radius: 2px;
+}
+
+.source-backdrop mark.current {
+  background: var(--mark-current);
+}
+
+.mode-wysiwyg .source-pane,
+.mode-source .wysiwyg-pane {
+  display: none;
+}
+
+.wysiwyg-pane .milkdown {
+  min-height: 100%;
+  /* テーマ側の書体 (明朝の見出しなど) を丸ゴシックに置き換える */
+  --crepe-font-title: var(--font-rounded);
+  --crepe-font-default: var(--font-rounded);
+}
+
+.wysiwyg-pane .milkdown .ProseMirror {
+  line-height: 1.8;
+}
+
+.wysiwyg-pane .milkdown .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 700;
+}
+
+/* ---- 表: 列幅を内容に合わせ、入りきらない表は横スクロールにする ---- */
+
+.wysiwyg-pane .milkdown .milkdown-table-block {
+  margin: 20px 0;
+}
+
+.wysiwyg-pane .milkdown .milkdown-table-block .table-wrapper {
+  overflow-x: auto;
+}
+
+.wysiwyg-pane .milkdown .milkdown-table-block table {
+  table-layout: auto;
+  width: auto;
+  min-width: 40%;
+  max-width: none;
+}
+
+.wysiwyg-pane .milkdown .milkdown-table-block :is(th, td) {
+  min-width: 4em;
+  vertical-align: top;
+}
+
+/* 長文の列が広がりすぎないよう、1 列の幅は 40em までに抑える */
+.wysiwyg-pane .milkdown .milkdown-table-block :is(th, td) > p {
+  max-width: 40em;
+}
+
+.wysiwyg-pane .milkdown .milkdown-table-block th {
+  background: var(--crepe-color-surface-low);
+  white-space: nowrap;
+}
+
+.wysiwyg-pane .milkdown .milkdown-table-block tbody tr:not([data-is-header]):nth-child(odd) td {
+  background: color-mix(in srgb, var(--crepe-color-surface-low) 45%, transparent);
+}
+
+.wysiwyg-pane .milkdown .ProseMirror {
+  padding: 32px 80px 30vh;
+}
+
+.wysiwyg-pane.drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+}
+
+/* ---- ステータスバー ---- */
+
+.statusbar {
+  display: flex;
+  gap: 16px;
+  padding: 3px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--toolbar-bg);
+  border-top: 1px solid var(--border);
+}
+
+.statusbar .spacer {
+  flex: 1;
+}
+
+.statusbar .error {
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .wysiwyg-pane .milkdown .ProseMirror {
+    padding: 16px;
+  }
+  .mode-split {
+    flex-direction: column;
+  }
+  .outline {
+    position: absolute;
+    z-index: 30;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(280px, 82vw);
+    box-shadow: 4px 0 18px rgba(0, 0, 0, 0.2);
+  }
+  .body { position: relative; }
+  .toolbar { gap: 6px; padding: 6px; }
+  .filename { min-width: 90px; }
+}
+
+/* ---- リンク (Ctrl を押している間は押せる見た目にする) ---- */
+
+body.link-mod .ProseMirror a[href] {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.status-hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 50%;
+}
+
+/* ---- PDF / 印刷: 文書の部分だけを白い紙に出す ---- */
+
+@page { size: A4; margin: 15mm; }
+
+.shortcuts-list { display: grid; grid-template-columns: minmax(220px, auto) 1fr; gap: 6px 18px; }
+.shortcuts-list dt { font-family: monospace; }
+.shortcuts-list dd { margin: 0; }
+#export-settings label { display: flex; justify-content: space-between; gap: 20px; margin: 14px 0; }
+#export-settings select { min-width: 150px; }
+#doc-stats { white-space: nowrap; }
+
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body {
+    display: block !important;
+  }
+
+  .toolbar,
+  .tab-bar,
+  .outline,
+  .statusbar,
+  .notice,
+  .find-bar,
+  .source-pane,
+  .context-menu,
+  dialog,
+  .milkdown-block-handle,
+  .milkdown-slash-menu,
+  .milkdown-toolbar,
+  .milkdown-link-preview,
+  .milkdown-link-edit,
+  .milkdown-table-block .cell-handle,
+  .milkdown-table-block .line-handle,
+  .milkdown-table-block .drag-preview,
+  .prosemirror-virtual-cursor {
+    display: none !important;
+  }
+
+  .body,
+  .main,
+  .workspace,
+  .wysiwyg-pane {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    border: none !important;
+  }
+
+  .wysiwyg-pane .milkdown .ProseMirror {
+    padding: 0 !important;
+  }
+
+  .milkdown .crepe-placeholder::before,
+  .milkdown-table-block .selectedCell::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  .milkdown-table-block .table-wrapper {
+    overflow: visible !important;
+  }
+
+  /* ページの途中で切れると読みにくいもの */
+  tr,
+  img,
+  pre,
+  .milkdown-code-block,
+  blockquote {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    break-after: avoid;
+  }
+
+  img {
+    max-width: 100% !important;
+  }
+}
+
+/* 印刷はテーマに関係なく、白い紙に黒い文字で出す */
+@media print {
+  :root {
+    --bg: #ffffff !important;
+    --fg: #1f2328 !important;
+    --muted: #656d76 !important;
+    --border: #d0d7de !important;
+    color-scheme: light !important;
+  }
+
+  .wysiwyg-pane .milkdown {
+    --crepe-color-background: #ffffff !important;
+    --crepe-color-on-background: #1f2328 !important;
+    --crepe-color-surface: #f6f8fa !important;
+    --crepe-color-surface-low: #f3f4f6 !important;
+    --crepe-color-on-surface: #1f2328 !important;
+    --crepe-color-on-surface-variant: #57606a !important;
+    --crepe-color-outline: #d0d7de !important;
+    --crepe-color-primary: #0969da !important;
+    --crepe-color-secondary: #ddf4ff !important;
+    --crepe-color-inline-code: #b3261e !important;
+    --crepe-color-inline-area: #f3f4f6 !important;
+    background: #ffffff !important;
+    color: #1f2328 !important;
+  }
+}

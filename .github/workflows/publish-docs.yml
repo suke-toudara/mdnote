@@ -1,0 +1,50 @@
+name: Publish documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs-src/**'
+      - '.github/workflows/publish-docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install mkbook
+        run: |
+          git clone https://github.com/hamaluik/mkbook.git "$RUNNER_TEMP/mkbook"
+          cd "$RUNNER_TEMP/mkbook"
+          git checkout 7f8f36183de09278b8d6335aaffd6b4173119835
+          sed -i 's/^reqwest = "0.9"$/reqwest = { version = "0.9", default-features = false, features = ["rustls-tls"] }/' Cargo.toml
+          cargo update
+          cargo install --path . --root "$RUNNER_TEMP/mkbook-bin"
+          echo "$RUNNER_TEMP/mkbook-bin/bin" >> "$GITHUB_PATH"
+      - name: Build book
+        run: mkbook build -i docs-src -o site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

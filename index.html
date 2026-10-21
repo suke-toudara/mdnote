@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MD Editor</title>
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="group">
+        <button id="btn-outline" class="icon-btn" title="目次の表示切替 (Ctrl+Shift+E)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 4h11M5 8h8.5M5 12h8.5"/></svg></button>
+        <button id="btn-new" title="新規 (Ctrl+N)">新規</button>
+        <button id="btn-open" title="開く (Ctrl+O)">開く</button>
+        <button id="btn-open-folder" title="フォルダを開く (Ctrl+Shift+O)" hidden>フォルダを開く</button>
+        <div class="recent-wrap" id="recent-wrap" hidden>
+          <button id="btn-recent" aria-expanded="false" aria-controls="recent-menu">最近開いたファイル</button>
+          <div id="recent-menu" class="recent-menu" hidden></div>
+        </div>
+        <button id="btn-save" title="保存 (Ctrl+S)">保存</button>
+        <button id="btn-save-as" title="名前を付けて保存 (Ctrl+Shift+S)">名前を付けて保存</button>
+        <button id="btn-pdf" title="PDF として書き出す (Ctrl+P)">PDF</button>
+        <button id="btn-html" title="HTML として書き出す">HTML</button>
+        <button id="btn-print" title="印刷プレビュー">印刷</button>
+        <button id="btn-shortcuts" title="ショートカット一覧">?</button>
+      </div>
+      <div class="filename"><span id="dirty" class="dirty" hidden>●</span><span id="filename">無題.md</span></div>
+      <div class="group">
+        <button id="btn-autosave" class="autosave-btn" title="自動保存">自動保存</button>
+        <button id="btn-find" class="icon-btn" title="検索・置換 (Ctrl+F / Ctrl+H)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg></button>
+        <button id="btn-settings" class="icon-btn" title="設定"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" stroke-linecap="round"/></svg></button>
+        <button id="btn-theme" class="icon-btn" title="テーマ切替"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg></button>
+      </div>
+      <div class="group mode" title="表示切替 (Ctrl+/)">
+        <button data-mode="wysiwyg" class="active">プレビュー編集</button>
+        <button data-mode="split">分割</button>
+        <button data-mode="source">ソース</button>
+      </div>
+    </header>
+
+    <div id="notice" class="notice" hidden>
+      <span id="notice-text"></span>
+      <span class="spacer"></span>
+      <button id="notice-reload">読み込み直す</button>
+      <button id="notice-diff" hidden>差分を見る</button>
+      <button id="notice-dismiss">このまま編集を続ける</button>
+    </div>
+
+    <dialog id="recovery-notice" class="recovery-dialog" aria-labelledby="recovery-text">
+      <span id="recovery-text"></span>
+      <div class="dialog-actions">
+        <button id="recovery-restore">下書きを復元</button>
+        <button id="recovery-discard">下書きを破棄</button>
+      </div>
+    </dialog>
+
+    <div class="body">
+      <aside id="outline" class="outline">
+        <div class="sidebar-tabs" role="tablist">
+          <button data-panel="outline" class="active">目次</button>
+          <button id="tab-files" data-panel="files">ファイル</button>
+        </div>
+        <div id="panel-outline">
+          <ul id="outline-list"></ul>
+        </div>
+        <div id="panel-files" hidden>
+          <div class="files-head">
+            <span id="folder-name" class="folder-name">フォルダが開かれていません</span>
+            <button id="btn-tree-new-file" class="icon-btn" title="新しいファイル" hidden><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M9 1.5H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-8z"/><path d="M9 1.5v4h4"/><path d="M8 8.5v4M6 10.5h4" stroke-linecap="round"/></svg></button>
+            <button id="btn-tree-new-folder" class="icon-btn" title="新しいフォルダ" hidden><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M1.5 4a1 1 0 0 1 1-1h3.5l1.5 1.5h6a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/><path d="M8 7v4M6 9h4" stroke-linecap="round"/></svg></button>
+            <button id="btn-folder-refresh" class="icon-btn" title="読み込み直す" hidden><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M13 8a5 5 0 1 1-1.5-3.6"/><path d="M13 2.5v3h-3"/></svg></button>
+          </div>
+          <ul id="file-tree" class="file-tree"></ul>
+          <div class="files-actions">
+            <button id="btn-folder">フォルダを開く…</button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div id="tab-bar" class="tab-bar" role="tablist"></div>
+        <div id="find-bar" class="find-bar" hidden>
+          <div class="find-row">
+            <input class="find-query" type="text" placeholder="検索" spellcheck="false" />
+            <button class="find-case toggle" title="大文字と小文字を区別">Aa</button>
+            <button class="find-regex toggle" title="正規表現">.*</button>
+            <span class="find-count"></span>
+            <button class="find-prev" title="前へ (Shift+Enter)">↑</button>
+            <button class="find-next" title="次へ (Enter)">↓</button>
+            <button class="find-close" title="閉じる (Esc)">✕</button>
+          </div>
+          <div class="find-row replace-row">
+            <input class="find-replace" type="text" placeholder="置換" spellcheck="false" />
+            <button class="find-replace-one" title="置換 (Enter)">置換</button>
+            <button class="find-replace-all" title="すべて置換 (Ctrl+Enter)">すべて置換</button>
+          </div>
+        </div>
+
+        <main id="workspace" class="workspace mode-wysiwyg">
+          <section class="pane source-pane">
+            <textarea id="source" spellcheck="false" placeholder="Markdownを入力..."></textarea>
+          </section>
+          <section id="wysiwyg-pane" class="pane wysiwyg-pane">
+            <div id="editor"></div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <footer class="statusbar">
+      <span id="status-message"></span>
+      <span class="spacer"></span>
+      <span id="doc-stats"></span>
+      <span id="status-hint" class="status-hint"></span>
+      <span id="status-count"></span>
+    </footer>
+
+    <div id="context-menu" class="context-menu" role="menu" hidden></div>
+    <input id="file-input" type="file" accept=".md,.markdown,.txt,text/markdown" hidden />
+    <dialog id="diff-dialog" class="diff-dialog" aria-labelledby="diff-title">
+      <div class="diff-header">
+        <h2 id="diff-title">外部で変更された内容との差分</h2>
+        <button id="diff-close" title="閉じる">閉じる</button>
+      </div>
+      <p>− は編集中の内容、＋ はディスク上の内容です。</p>
+      <pre id="diff-content" class="diff-content"></pre>
+      <div class="diff-actions">
+        <button id="diff-reload">ディスク上の内容を読み込む</button>
+      </div>
+    </dialog>
+    <dialog id="export-settings" class="diff-dialog" aria-labelledby="export-settings-title">
+      <h2 id="export-settings-title">印刷・PDF の設定</h2>
+      <label>用紙 <select id="page-size"><option value="A4">A4</option><option value="Letter">Letter</option><option value="A3">A3</option></select></label>
+      <label>余白 <select id="page-margin"><option value="normal">標準 (15 mm)</option><option value="narrow">狭い (10 mm)</option><option value="wide">広い (25 mm)</option></select></label>
+      <div class="dialog-actions"><button id="print-preview">印刷プレビュー</button><button id="export-pdf">PDF を書き出す</button><button id="export-settings-close">閉じる</button></div>
+    </dialog>
+    <dialog id="shortcuts-dialog" class="diff-dialog" aria-labelledby="shortcuts-title">
+      <h2 id="shortcuts-title">ショートカット</h2>
+      <dl class="shortcuts-list"><dt>Ctrl/⌘ + S</dt><dd>保存</dd><dt>Ctrl/⌘ + Shift + S</dt><dd>名前を付けて保存</dd><dt>Ctrl/⌘ + O</dt><dd>ファイルを開く</dd><dt>Ctrl/⌘ + Shift + O</dt><dd>フォルダを開く</dd><dt>Ctrl/⌘ + F</dt><dd>検索</dd><dt>Ctrl/⌘ + H</dt><dd>検索と置換</dd><dt>Ctrl/⌘ + /</dt><dd>表示モード切替</dd><dt>Ctrl/⌘ + Tab / Shift + Tab</dt><dd>タブ切替</dd><dt>Ctrl/⌘ + W</dt><dd>タブを閉じる</dd><dt>Ctrl/⌘ + P</dt><dd>印刷・PDF</dd><dt>Ctrl/⌘ + Shift + E</dt><dd>サイドバー切替</dd><dt>ソース表示で Tab / Shift + Tab</dt><dd>インデント / 逆インデント</dd></dl>
+      <div class="dialog-actions"><button id="shortcuts-close">閉じる</button></div>
+    </dialog>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
