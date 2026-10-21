@@ -29,8 +29,9 @@ fi
 
 ./start.sh --build
 
-mkdir -p "$APPS" "$ICONS/scalable/apps"
-install -m 644 src-tauri/icons/icon.svg "$ICONS/scalable/apps/mdnote.svg"
+mkdir -p "$APPS"
+# 以前の SVG より、新しい PNG アイコンを優先する。
+rm -f "$ICONS/scalable/apps/mdnote.svg"
 for s in "${SIZES[@]}"; do
   mkdir -p "$ICONS/${s}x${s}/apps"
   convert src-tauri/icons/icon-source.png -resize "${s}x${s}" "$ICONS/${s}x${s}/apps/mdnote.png"
