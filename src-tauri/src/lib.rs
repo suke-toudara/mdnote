@@ -15,7 +15,7 @@ fn move_to_trash(path: String) -> Result<(), String> {
 }
 
 #[derive(Default)]
-struct ClaudeKey(std::sync::Mutex<Option<String>>);
+pub(crate) struct ClaudeKey(pub(crate) std::sync::Mutex<Option<String>>);
 
 #[tauri::command]
 fn claude_key_status(state: tauri::State<'_, ClaudeKey>) -> bool {
@@ -179,10 +179,11 @@ async fn export_pdf(window: tauri::WebviewWindow, path: String, page_size: Strin
 pub fn run() {
   tauri::Builder::default()
     .manage(ClaudeKey::default())
+    .manage(agent::AgentState::default())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_opener::init())
-    .invoke_handler(tauri::generate_handler![initial_file, move_to_trash, export_pdf, claude_key_status, set_claude_key, ask_claude])
+    .invoke_handler(tauri::generate_handler![initial_file, move_to_trash, export_pdf, claude_key_status, set_claude_key, ask_claude, agent::run_document_agent, agent::apply_agent_edits, agent::discard_agent_run])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -196,3 +197,4 @@ pub fn run() {
     .run(tauri::generate_context!())
     .expect("error while building tauri application");
 }
+mod agent;

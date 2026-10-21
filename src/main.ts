@@ -154,6 +154,7 @@ interface NoticeState {
 interface Tab {
   id: number;
   doc: Doc;
+  preview: boolean;
   // 正となる Markdown。ソース側で書いた生テキストはそのまま保持する。
   markdown: string;
   // エディタが最後に出力した Markdown。replaceAll 後の再通知を本物の編集と区別するために使う。
@@ -183,6 +184,7 @@ function createTab(doc: Doc, content: string): Tab {
   return {
     id: nextTabId++,
     doc,
+    preview: false,
     markdown: content,
     lastEditorMd: '',
     dirty: false,
@@ -406,6 +408,7 @@ function updateDocUi() {
 
 function setDirty(t: Tab, value: boolean) {
   t.dirty = value;
+  if (value) t.preview = false;
   if (t === cur) updateDocUi();
   else renderTabs();
   if (value) {
@@ -597,6 +600,19 @@ setupClaude(
     setDirty(cur, true);
     onContentChanged();
   },
+  () => {
+    flush();
+    const folder = fileTree.current;
+    return { folder, dirtyPaths: folder ? tabs.filter((t) => t.dirty && t.doc.path && isUnder(t.doc.path, folder)).map((t) => t.doc.path!) : [] };
+  },
+  (folder, proposals) => {
+    for (const item of proposals) {
+      const path = `${folder.replace(/[\\/]$/, '')}/${item.path}`;
+      const tab = tabs.find((t) => t.doc.path === path);
+      if (tab && !tab.dirty) loadIntoTab(tab, tab.doc, item.content, true);
+    }
+    void fileTree.refresh().catch(reportError);
+  },
 );
 
 source.addEventListener('input', () => {
@@ -624,8 +640,8 @@ function renderTabs() {
   tabBar.replaceChildren();
   for (const t of tabs) {
     const el = document.createElement('div');
-    el.className = `tab${t === cur ? ' active' : ''}${t.dirty ? ' dirty' : ''}`;
-    el.title = t.doc.path ?? t.doc.name;
+    el.className = `tab${t === cur ? ' active' : ''}${t.dirty ? ' dirty' : ''}${t.preview ? ' preview' : ''}`;
+    el.title = `${t.doc.path ?? t.doc.name}${t.preview ? '（プレビュー。編集すると固定されます）' : ''}`;
     el.setAttribute('role', 'tab');
     el.setAttribute('aria-selected', String(t === cur));
     const name = document.createElement('span');
@@ -781,10 +797,13 @@ function loadIntoTab(t: Tab, doc: Doc, content: string, keepScroll = false) {
 function openInTab(doc: Doc, content: string): Tab {
   const existing = doc.path ? tabs.find((t) => t.doc.path === doc.path) : undefined;
   if (existing) {
+    existing.preview = false;
     activate(existing);
+    renderTabs();
     return existing;
   }
   if (isPristine(cur)) {
+    cur.preview = false;
     loadIntoTab(cur, doc, content);
     return cur;
   }
@@ -798,13 +817,46 @@ function openInTab(doc: Doc, content: string): Tab {
 }
 
 async function openPath(path: string) {
+  ++previewRequest;
+  const existing = tabs.find((t) => t.doc.path === path);
+  if (existing) {
+    existing.preview = false;
+    activate(existing);
+    renderTabs();
+    return;
+  }
+  const opened = await readDoc(path);
+  openInTab({ path: opened.path, name: opened.name }, opened.content);
+}
+
+let previewRequest = 0;
+async function openPreviewPath(path: string) {
+  const request = ++previewRequest;
+  flush();
   const existing = tabs.find((t) => t.doc.path === path);
   if (existing) {
     activate(existing);
     return;
   }
   const opened = await readDoc(path);
-  openInTab({ path: opened.path, name: opened.name }, opened.content);
+  if (request !== previewRequest) return;
+  const doc = { path: opened.path, name: opened.name };
+  const preview = tabs.find((t) => t.preview);
+  if (preview) {
+    activate(preview);
+    loadIntoTab(preview, doc, opened.content);
+  } else if (isPristine(cur)) {
+    cur.preview = true;
+    loadIntoTab(cur, doc, opened.content);
+  } else {
+    captureCurrent();
+    const tab = createTab(doc, opened.content);
+    tab.preview = true;
+    tabs.splice(tabs.indexOf(cur) + 1, 0, tab);
+    renderRecent(addRecent(doc));
+    rememberDisk(tab, opened.content);
+    showTab(tab);
+  }
 }
 
 async function doNew() {
@@ -978,7 +1030,8 @@ window.setInterval(() => void checkExternalChange(), 1500);
 const isUnder = (path: string, dir: string) => path === dir || path.startsWith(`${dir}/`) || path.startsWith(`${dir}\\`);
 
 const fileTree = new FileTree($('file-tree'), {
-  open: (path) => void openPath(path).catch(reportError),
+  open: (path) => void openPreviewPath(path).catch(reportError),
+  openInNewTab: (path) => void openPath(path).catch(reportError),
   // 名前を変えたファイル (フォルダならその中のファイル) を開いているタブは、新しい場所に付け替える
   renamed(oldPath, newPath) {
     for (const t of tabs) {

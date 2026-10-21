@@ -460,6 +460,10 @@ button.active {
 }
 .claude-key-row { display: flex; gap: 6px; }
 .claude-key-row button { flex: none; }
+.chat-key-settings { border: 1px solid var(--border); border-radius: 6px; margin-top: 16px; padding: 12px; }
+.chat-key-settings legend { color: var(--muted); font-size: 13px; }
+.chat-key-settings .claude-key-row { margin: 8px 0; }
+.chat-key-settings input { min-width: 0; flex: 1; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); padding: 6px 8px; }
 .claude-hint { color: var(--muted); font-size: 12px; line-height: 1.55; margin: 0; }
 .claude-messages { flex: 1; min-height: 80px; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .claude-message { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.55; font-size: 13px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
@@ -474,6 +478,14 @@ button.active {
 .claude-compose textarea { resize: vertical; min-height: 80px; }
 .claude-compose-actions { display: flex; justify-content: flex-end; gap: 7px; }
 .claude-compose-actions #claude-send { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.claude-compose .agent-run { width: 100%; }
+.agent-review { padding: 10px 12px; border-top: 1px solid var(--border); max-height: 42vh; overflow: auto; }
+.agent-review[hidden] { display: none; }
+.agent-review > strong { font-size: 12px; }
+.agent-file { margin-top: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.agent-file summary { padding: 7px; cursor: pointer; font-size: 12px; overflow-wrap: anywhere; }
+.agent-file summary input { width: auto; margin-right: 6px; }
+.agent-diff { max-height: 180px; overflow: auto; margin: 0; padding: 8px; border-top: 1px solid var(--border); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.45 ui-monospace, monospace; }
 
 /* ---- 目次 ---- */
 
@@ -706,6 +718,10 @@ body.outline-hidden .outline {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tab.preview .tab-name {
+  font-style: italic;
 }
 
 .tab-close {

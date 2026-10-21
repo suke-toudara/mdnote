@@ -16,6 +16,7 @@ import {
 
 export interface TreeHandlers {
   open(path: string): void;
+  openInNewTab(path: string): void;
   // ファイル・フォルダの名前が変わった (開いているタブの場所を付け替える)
   renamed(oldPath: string, newPath: string): void;
   // ゴミ箱へ移した (開いているタブを閉じる)
@@ -237,7 +238,7 @@ export class FileTree {
       const path = await createFile(dir, /\.[^.]+$/.test(name) ? name : `${name}.md`);
       this.select(path, false);
       await this.refresh();
-      this.handlers.open(path);
+      this.handlers.openInNewTab(path);
     } catch (e) {
       this.handlers.notify(e instanceof Error ? e.message : String(e), true);
     }
@@ -320,6 +321,7 @@ export class FileTree {
     }
     const path = row?.dataset.path;
     const items: MenuEntry[] = [
+      ...(path && row?.classList.contains('tree-file') ? [{ label: '新しいタブで開く', run: () => this.handlers.openInNewTab(path) } as MenuEntry, 'separator' as const] : []),
       { label: '新しいファイル', run: () => void this.newFile() },
       { label: '新しいフォルダ', run: () => void this.newFolder() },
     ];

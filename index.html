@@ -130,15 +130,14 @@
       <aside id="claude-panel" class="claude-panel" aria-label="チャット" hidden>
         <div class="claude-head"><strong>チャット</strong><button id="claude-close" type="button" aria-label="チャットを閉じる">×</button></div>
         <div class="claude-settings">
-          <label for="claude-key">Claude API キー</label>
-          <div class="claude-key-row"><input id="claude-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-..." /><button id="claude-save-key" type="button">設定</button></div>
-          <div id="claude-key-status" class="claude-hint">API キーを設定してください。キーは起動中だけ保持します。</div>
+          <div id="chat-key-state" class="claude-hint">API キーは「設定」から登録できます。</div>
           <label for="claude-model">モデル</label>
           <select id="claude-model"><option value="claude-sonnet-5-5">Sonnet 5.5</option><option value="claude-haiku-5-5">Haiku 5.5</option></select>
         </div>
-        <div id="claude-messages" class="claude-messages" aria-live="polite"><p class="claude-hint">現在の文書について質問したり、変更案を作成したりできます。送信時に文書全体を Claude に渡します。</p></div>
+        <div id="claude-messages" class="claude-messages" aria-live="polite"><p class="claude-hint">質問と変更案では現在の文書を送信します。エージェントは開いたフォルダから必要な Markdown を調べます。</p></div>
         <div id="claude-proposal" class="claude-proposal" hidden><strong>変更案</strong><textarea id="claude-proposal-text" readonly></textarea><div class="claude-proposal-actions"><button id="claude-apply" type="button">文書に適用</button><button id="claude-discard" type="button">破棄</button></div></div>
-        <div class="claude-compose"><label for="claude-question">メッセージ</label><textarea id="claude-question" placeholder="文書について質問する" rows="4"></textarea><div class="claude-compose-actions"><button id="claude-edit" type="button">変更案を作る</button><button id="claude-send" type="button">送信</button></div></div>
+        <div id="agent-review" class="agent-review" hidden><strong>エージェントの変更案</strong><div id="agent-files"></div><div class="claude-proposal-actions"><button id="agent-apply" type="button">選択した変更を適用</button><button id="agent-discard" type="button">破棄</button></div></div>
+        <div class="claude-compose"><label for="claude-question">メッセージ</label><textarea id="claude-question" placeholder="文書について質問する" rows="4"></textarea><div class="claude-compose-actions"><button id="claude-edit" type="button">変更案を作る</button><button id="claude-send" type="button">送信</button></div><button id="agent-run" type="button" class="agent-run">フォルダを調べて実行</button><div id="agent-progress" class="claude-hint" aria-live="polite" hidden></div></div>
       </aside>
     </div>
 
@@ -199,6 +198,7 @@
       </label>
       <label class="setting-row"><span>Enter で改行する</span><input id="hard-break-enter" type="checkbox" /></label>
       <label class="setting-row"><span>自動保存</span><input id="settings-autosave" type="checkbox" /></label>
+      <fieldset class="chat-key-settings"><legend>チャット · Claude</legend><label for="claude-key">Claude API キー</label><div class="claude-key-row"><input id="claude-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-..." /><button id="claude-save-key" type="button">設定</button></div><div id="claude-key-status" class="setting-note">キーはアプリの起動中だけ保持します。</div></fieldset>
       <div class="dialog-actions"><button id="settings-close" type="button">閉じる</button></div>
     </dialog>
     <dialog id="shortcuts-dialog" class="diff-dialog" aria-labelledby="shortcuts-title">
