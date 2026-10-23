@@ -11,6 +11,8 @@
   --mark: rgba(255, 200, 0, 0.35);
   --mark-current: rgba(255, 140, 0, 0.7);
   --danger: #d1242f;
+  /* 編集位置のカーソル。背景からはっきり浮くよう、テーマごとに目立つ色を当てる */
+  --caret: #0969da;
   --font-rounded: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
   --document-font: var(--font-rounded);
   color-scheme: light;
@@ -30,6 +32,7 @@
   --mark: rgba(234, 92, 0, 0.33);
   --mark-current: rgba(81, 92, 106, 0.9);
   --danger: #f48771;
+  --caret: #4fc1ff;
   color-scheme: dark;
 }
 
@@ -133,25 +136,25 @@ button.active {
 :root[data-theme="paper"] {
   --bg: #f5f1e8; --fg: #34312d; --muted: #746e65; --border: #d8d0c3;
   --toolbar-bg: #eee8dc; --source-bg: #f8f5ee; --hover: #e7dfd1;
-  --accent: #6b655a; --accent-fg: #fff; --danger: #a84242;
+  --accent: #6b655a; --accent-fg: #fff; --danger: #a84242; --caret: #c0562b;
   color-scheme: light;
 }
 :root[data-theme="sepia"] {
   --bg: #eadfc9; --fg: #443828; --muted: #776b57; --border: #c8b99c;
   --toolbar-bg: #dfd1b6; --source-bg: #f0e7d6; --hover: #d7c7aa;
-  --accent: #765b3d; --accent-fg: #fff; --danger: #a64b36;
+  --accent: #765b3d; --accent-fg: #fff; --danger: #a64b36; --caret: #b03a1a;
   color-scheme: light;
 }
 :root[data-theme="graphite"] {
   --bg: #1b1b1b; --fg: #bdbdbd; --muted: #929292; --border: #343434;
   --toolbar-bg: #232323; --source-bg: #1d1d1d; --hover: #303030;
-  --accent: #666; --accent-fg: #f4f4f4; --danger: #d48d85;
+  --accent: #666; --accent-fg: #f4f4f4; --danger: #d48d85; --caret: #f2f2f2;
   color-scheme: dark;
 }
 :root[data-theme="ocean"] {
   --bg: #152129; --fg: #c2ced0; --muted: #91a1a6; --border: #30414a;
   --toolbar-bg: #1c2c35; --source-bg: #17252e; --hover: #2b404a;
-  --accent: #497f91; --accent-fg: #fff; --danger: #dc998b;
+  --accent: #497f91; --accent-fg: #fff; --danger: #dc998b; --caret: #6fd8ec;
   color-scheme: dark;
 }
 :root[data-theme="paper"] .wysiwyg-pane .milkdown,
@@ -996,6 +999,7 @@ body.outline-hidden .outline {
 
 #source {
   flex: 1;
+  caret-color: var(--caret);
   width: 100%;
   border: none;
   outline: none;
@@ -1040,6 +1044,28 @@ body.outline-hidden .outline {
 .wysiwyg-pane .milkdown .ProseMirror {
   font-size: var(--document-font-size, 16px);
   line-height: 1.8;
+}
+
+/* Crepe は仮想カーソルを枠線色 (薄いグレー) で描くため見失いやすい。太く濃い色にする */
+.wysiwyg-pane .milkdown .ProseMirror-focused {
+  --prosemirror-virtual-cursor-color: var(--caret);
+}
+
+.wysiwyg-pane .milkdown .ProseMirror .prosemirror-virtual-cursor {
+  border-left-width: 3px;
+  border-radius: 1px;
+}
+
+.wysiwyg-pane .milkdown .ProseMirror :is(.prosemirror-virtual-cursor-left, .prosemirror-virtual-cursor-right) {
+  border-width: 3px;
+}
+
+.wysiwyg-pane .milkdown .ProseMirror .prosemirror-virtual-cursor-left {
+  border-left: none;
+}
+
+.wysiwyg-pane .milkdown .ProseMirror .prosemirror-virtual-cursor-right {
+  border-right: none;
 }
 
 .wysiwyg-pane .milkdown .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
