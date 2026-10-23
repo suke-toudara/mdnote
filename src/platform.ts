@@ -4,7 +4,8 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { dirname, join, normalize } from '@tauri-apps/api/path';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { getAllWindows, getCurrentWindow } from '@tauri-apps/api/window';
 import { ask, open, save } from '@tauri-apps/plugin-dialog';
 import { exists, mkdir, readDir, readFile, readTextFile, rename, stat, writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { openPath as openWithSystemApp, openUrl, revealItemInDir } from '@tauri-apps/plugin-opener';
@@ -318,6 +319,34 @@ export async function resolveImageUrl(url: string, docPath: string | null): Prom
 export async function setWindowTitle(title: string) {
   document.title = title;
   if (isTauri) await getCurrentWindow().setTitle(title);
+}
+
+// メインのウィンドウだけが前回のタブやフォルダを引き継ぐ。切り離したタブのウィンドウは doc-*
+export const windowLabel = isTauri ? getCurrentWindow().label : 'main';
+export const isMainWindow = windowLabel === 'main';
+
+export const newWindowLabel = () => `doc-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+export async function openWindowLabels(): Promise<string[]> {
+  return isTauri ? (await getAllWindows()).map((w) => w.label) : [];
+}
+
+// 新しいウィンドウを開く。x, y はウィンドウの左上に置く画面上の位置
+export async function openNewWindow(label: string, x?: number, y?: number) {
+  const win = new WebviewWindow(label, {
+    url: 'index.html',
+    title: 'mdnote',
+    width: 1100,
+    height: 780,
+    minWidth: 480,
+    minHeight: 320,
+    dragDropEnabled: true,
+    ...(x !== undefined && y !== undefined ? { x, y } : { center: true }),
+  });
+  await new Promise<void>((resolve, reject) => {
+    void win.once('tauri://created', () => resolve());
+    void win.once('tauri://error', (e) => reject(new Error(`ウィンドウを開けませんでした: ${String(e.payload)}`)));
+  });
 }
 
 export async function initialFile(): Promise<string | null> {

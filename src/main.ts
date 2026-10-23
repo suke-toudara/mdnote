@@ -27,8 +27,12 @@ import {
   initialFile,
   isImagePath,
   isMarkdownPath,
+  isMainWindow,
   isTauri,
+  newWindowLabel,
   onCloseRequested,
+  openNewWindow,
+  openWindowLabels,
   exportPdf,
   onFileDrop,
   openDoc,
@@ -42,8 +46,10 @@ import {
   saveDoc,
   setWindowTitle,
   storeImage,
+  windowLabel,
 } from './platform';
-import { addRecent, addRecentFolder, readDrafts, readRecent, readRecentFolders, readSession, removeRecent, removeRecentFolder, writeDrafts, writeSession, type Draft, type RecentFile } from './session';
+import { addRecent, addRecentFolder, orphanDraftKeys, readDrafts, readRecent, readRecentFolders, readSession, removeDraftKeys, removeHandoff, removeRecent, removeRecentFolder, takeHandoff, useWindowDrafts, writeDrafts, writeHandoff, writeSession, type Draft, type RecentFile } from './session';
+import { showContextMenu } from './context-menu';
 import { brInTableCells, excelLikeTable, selectionInTable } from './table-edit';
 import { setupTableMenu } from './table-menu';
 import { defaultHandlers } from 'mdast-util-to-markdown';
@@ -179,6 +185,8 @@ interface Tab {
 
 let nextTabId = 1;
 const tabs: Tab[] = [];
+
+if (!isMainWindow) useWindowDrafts(windowLabel);
 
 function createTab(doc: Doc, content: string): Tab {
   return {
@@ -669,6 +677,20 @@ function renderTabs() {
       e.dataTransfer?.setData('text/tab-id', String(t.id));
       if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
     });
+    // ウィンドウの外で離したら、そのタブを新しいウィンドウに切り離す
+    el.addEventListener('dragend', (e) => {
+      const outside = e.clientX < 0 || e.clientY < 0 || e.clientX > window.innerWidth || e.clientY > window.innerHeight;
+      if (!isTauri || e.dataTransfer?.dropEffect !== 'none' || !(outside || dragLeftWindow)) return;
+      void detachTab(t, e.screenX || undefined, e.screenY || undefined).catch(reportError);
+    });
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      showContextMenu([
+        { label: '新しいウィンドウで開く', disabled: !isTauri, run: () => void detachTab(t).catch(reportError) },
+        'separator',
+        { label: '閉じる', shortcut: 'Ctrl+W', run: () => void closeTab(t).catch(reportError) },
+      ], e.clientX, e.clientY);
+    });
     el.addEventListener('dragover', (e) => { e.preventDefault(); });
     el.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -683,6 +705,13 @@ function renderTabs() {
   }
   tabBar.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
+
+// ドラッグ中にポインタがウィンドウの外へ出たか (dragend の座標が取れない環境向け)
+let dragLeftWindow = false;
+document.addEventListener('dragover', () => { dragLeftWindow = false; });
+document.addEventListener('dragleave', (e) => {
+  if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) dragLeftWindow = true;
+});
 
 // 表示中のタブの状態をタブに書き戻す
 function captureCurrent() {
@@ -744,6 +773,11 @@ async function closeTab(t: Tab) {
     if (autosave && t.doc.path && !t.externalConflict) await doSave(t, false, true);
     if (t.dirty && !(await confirmDialog(`「${t.doc.name}」の変更は保存されていません。閉じますか？`))) return;
   }
+  removeTab(t);
+}
+
+// 未保存の確認をせずにタブを取り除く
+function removeTab(t: Tab) {
   window.clearTimeout(t.autosaveTimer);
   const index = tabs.indexOf(t);
   if (index < 0) return;
@@ -755,7 +789,30 @@ async function closeTab(t: Tab) {
   saveSession();
 }
 
+// タブを新しいウィンドウへ移す。未保存の変更もそのまま引き継ぐ
+// x, y: ウィンドウを置く画面上の位置 (ドラッグで離した場所)
+async function detachTab(t: Tab, x?: number, y?: number) {
+  if (!tabs.includes(t)) return;
+  if (t === cur) captureCurrent();
+  const label = newWindowLabel();
+  writeHandoff(label, {
+    doc: { path: t.doc.path, name: t.doc.name },
+    content: t.markdown,
+    dirty: t.dirty,
+    folder: fileTree.current,
+    expanded: fileTree.expandedDirs,
+  });
+  try {
+    await openNewWindow(label, x === undefined ? undefined : Math.max(0, x - 120), y === undefined ? undefined : Math.max(0, y - 20));
+  } catch (e) {
+    removeHandoff(label);
+    throw e;
+  }
+  removeTab(t);
+}
+
 function saveSession() {
+  if (!isMainWindow) return;
   writeSession({
     files: tabs.flatMap((t) => (t.doc.path ? [t.doc.path] : [])),
     active: cur.doc.path,
@@ -1095,7 +1152,7 @@ async function openFolder(folder: string, expanded: string[] = [], reveal = true
     setSidebarVisible(true);
   }
   saveSession();
-  savePref('expandedDirs', JSON.stringify(expanded));
+  if (isMainWindow) savePref('expandedDirs', JSON.stringify(expanded));
 }
 
 async function doOpenFolder() {
@@ -1107,7 +1164,9 @@ async function doOpenFolder() {
   if (folder) await openFolder(folder);
 }
 
-$('file-tree').addEventListener('tree-change', () => savePref('expandedDirs', JSON.stringify(fileTree.expandedDirs)));
+$('file-tree').addEventListener('tree-change', () => {
+  if (isMainWindow) savePref('expandedDirs', JSON.stringify(fileTree.expandedDirs));
+});
 
 // ---- 目次 ----
 
@@ -1641,9 +1700,19 @@ updateDocUi();
 refreshOutline();
 updateCount();
 
-const startupDrafts = readDrafts();
+// 切り離したウィンドウのうち、閉じずに終わったものの下書きも一緒に復元する
+const orphanKeys = isTauri && isMainWindow ? orphanDraftKeys(await openWindowLabels().catch(() => [])) : [];
+const startupDrafts = isMainWindow ? readDrafts(orphanKeys) : [];
 
-if (isTauri) {
+if (isTauri && !isMainWindow) {
+  // 切り離したタブを受け取る
+  const handoff = takeHandoff(windowLabel);
+  if (handoff) {
+    if (handoff.folder) await openFolder(handoff.folder, handoff.expanded, false).catch(() => fileTree.setFolder(null));
+    const t = openInTab(handoff.doc, handoff.content);
+    if (handoff.dirty) setDirty(t, true);
+  }
+} else if (isTauri) {
   if (savedSession.folder) {
     let expanded: string[] = [];
     try {
@@ -1687,6 +1756,7 @@ function showRecovery(drafts: Draft[]) {
         setDirty(t, true);
       }
       persistDrafts();
+      removeDraftKeys(orphanKeys);
       dialog.close();
       showStatus('下書きを復元しました');
     },
@@ -1696,6 +1766,7 @@ function showRecovery(drafts: Draft[]) {
     'click',
     () => {
       writeDrafts([]);
+      removeDraftKeys(orphanKeys);
       dialog.close();
       showStatus('下書きを破棄しました');
     },
@@ -1706,4 +1777,7 @@ function showRecovery(drafts: Draft[]) {
 // 開き直したファイルと同じ内容の下書きは不要なので捨てる
 const pendingDrafts = startupDrafts.filter((d) => !tabs.some((t) => t.doc.path === d.path && t.markdown === d.content));
 if (pendingDrafts.length) showRecovery(pendingDrafts);
-else writeDrafts([]);
+else if (isMainWindow) {
+  writeDrafts([]);
+  removeDraftKeys(orphanKeys);
+}

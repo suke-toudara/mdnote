@@ -16,17 +16,28 @@ const DRAFTS_KEY = 'md-editor-drafts';
 const RECENT_KEY = 'md-editor-recent';
 const RECENT_FOLDERS_KEY = 'mdnote-recent-folders';
 const SESSION_KEY = 'md-editor-session';
+const HANDOFF_KEY = 'mdnote-handoff';
+
+// 下書きの保存先。切り離したウィンドウはメインの下書きを上書きしないよう、自分専用のキーを使う
+let draftsKey = DRAFTS_KEY;
+
+export function useWindowDrafts(label: string) {
+  draftsKey = `${DRAFTS_KEY}:${label}`;
+}
 
 function isDraft(data: Partial<Draft> | null): data is Draft {
   return !!data && typeof data.name === 'string' && typeof data.content === 'string' &&
     (data.path === null || typeof data.path === 'string') && typeof data.updatedAt === 'number';
 }
 
-// 未保存のタブの下書き (タブごとに 1 件)
-export function readDrafts(): Draft[] {
+// 未保存のタブの下書き (タブごとに 1 件)。extraKeys: 一緒に読む他のウィンドウの下書き
+export function readDrafts(extraKeys: string[] = []): Draft[] {
   try {
-    const list: unknown = JSON.parse(localStorage.getItem(DRAFTS_KEY) ?? '[]');
-    const drafts = Array.isArray(list) ? list.filter(isDraft) : [];
+    const drafts: Draft[] = [];
+    for (const key of [draftsKey, ...extraKeys]) {
+      const list: unknown = JSON.parse(localStorage.getItem(key) ?? '[]');
+      if (Array.isArray(list)) drafts.push(...list.filter(isDraft));
+    }
     const legacy = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null') as Partial<Draft> | null;
     if (isDraft(legacy)) drafts.push(legacy);
     return drafts;
@@ -39,12 +50,12 @@ export function writeDrafts(drafts: { doc: Doc; content: string }[]): boolean {
   try {
     localStorage.removeItem(DRAFT_KEY);
     if (!drafts.length) {
-      localStorage.removeItem(DRAFTS_KEY);
+      localStorage.removeItem(draftsKey);
       return true;
     }
     const now = Date.now();
     const list = drafts.map(({ doc, content }) => ({ ...doc, content, updatedAt: now }) satisfies Draft);
-    localStorage.setItem(DRAFTS_KEY, JSON.stringify(list));
+    localStorage.setItem(draftsKey, JSON.stringify(list));
     return true;
   } catch {
     return false;
@@ -53,6 +64,56 @@ export function writeDrafts(drafts: { doc: Doc; content: string }[]): boolean {
 
 export function clearDrafts() {
   writeDrafts([]);
+}
+
+// 異常終了などで閉じずに終わった、切り離したウィンドウの下書きのキー
+export function orphanDraftKeys(openLabels: string[]): string[] {
+  try {
+    const prefix = `${DRAFTS_KEY}:`;
+    return Object.keys(localStorage).filter((key) => key.startsWith(prefix) && !openLabels.includes(key.slice(prefix.length)));
+  } catch {
+    return [];
+  }
+}
+
+export function removeDraftKeys(keys: string[]) {
+  try {
+    for (const key of keys) localStorage.removeItem(key);
+  } catch {
+    // 消せなくても次回また復元を尋ねるだけ
+  }
+}
+
+// タブを新しいウィンドウへ移すときの受け渡し (開いた側が読んだら消す)
+export interface Handoff {
+  doc: { path: string | null; name: string };
+  content: string;
+  dirty: boolean;
+  folder: string | null;
+  expanded: string[];
+}
+
+export function writeHandoff(label: string, handoff: Handoff) {
+  localStorage.setItem(`${HANDOFF_KEY}:${label}`, JSON.stringify(handoff));
+}
+
+export function takeHandoff(label: string): Handoff | null {
+  try {
+    const key = `${HANDOFF_KEY}:${label}`;
+    const data = JSON.parse(localStorage.getItem(key) ?? 'null') as Handoff | null;
+    localStorage.removeItem(key);
+    return data && typeof data.content === 'string' && typeof data.doc?.name === 'string' ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function removeHandoff(label: string) {
+  try {
+    localStorage.removeItem(`${HANDOFF_KEY}:${label}`);
+  } catch {
+    // 残っても誰も読まないだけ
+  }
 }
 
 // 開いていたタブとフォルダ (次回起動時に開き直す)
