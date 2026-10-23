@@ -672,16 +672,48 @@ function renderTabs() {
       }
     });
     el.addEventListener('click', () => activate(t));
-    el.draggable = true;
-    el.addEventListener('dragstart', (e) => {
-      e.dataTransfer?.setData('text/tab-id', String(t.id));
-      if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    el.dataset.tabId = String(t.id);
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || (e.target as HTMLElement).closest('.tab-close')) return;
+      // ドラッグ中に文書の文字が選択されないようにする
+      e.preventDefault();
+      tabDrag = { tab: t, x: e.clientX, y: e.clientY, moved: false };
+      el.setPointerCapture(e.pointerId);
     });
-    // ウィンドウの外で離したら、そのタブを新しいウィンドウに切り離す
-    el.addEventListener('dragend', (e) => {
-      const outside = e.clientX < 0 || e.clientY < 0 || e.clientX > window.innerWidth || e.clientY > window.innerHeight;
-      if (!isTauri || e.dataTransfer?.dropEffect !== 'none' || !(outside || dragLeftWindow)) return;
-      void detachTab(t, e.screenX || undefined, e.screenY || undefined).catch(reportError);
+    el.addEventListener('pointermove', (e) => {
+      if (tabDrag?.tab !== t) return;
+      if (!tabDrag.moved && Math.hypot(e.clientX - tabDrag.x, e.clientY - tabDrag.y) < 6) return;
+      tabDrag.moved = true;
+      el.classList.add('dragging');
+      const outside = isTauri && outsideWindow(e);
+      el.classList.toggle('detaching', outside);
+      const target = outside ? null : tabAt(e.clientX, e.clientY);
+      tabBar.querySelectorAll('.tab.drop-target').forEach((x) => x !== target && x.classList.remove('drop-target'));
+      if (target && target !== el) target.classList.add('drop-target');
+    });
+    el.addEventListener('pointerup', (e) => {
+      const drag = tabDrag;
+      tabDrag = null;
+      if (drag?.tab !== t || !drag.moved) return;
+      el.classList.remove('dragging', 'detaching');
+      tabBar.querySelectorAll('.tab.drop-target').forEach((x) => x.classList.remove('drop-target'));
+      // ウィンドウの外で離したら、そのタブを新しいウィンドウに切り離す
+      if (isTauri && outsideWindow(e)) {
+        void detachTab(t, e.screenX, e.screenY).catch(reportError);
+        return;
+      }
+      const target = tabAt(e.clientX, e.clientY);
+      const from = tabs.indexOf(t);
+      const to = tabs.findIndex((x) => String(x.id) === target?.dataset.tabId);
+      if (from < 0 || to < 0 || from === to) return;
+      tabs.splice(from, 1);
+      tabs.splice(to, 0, t);
+      renderTabs();
+      saveSession();
+    });
+    el.addEventListener('pointercancel', () => {
+      tabDrag = null;
+      renderTabs();
     });
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -691,27 +723,20 @@ function renderTabs() {
         { label: '閉じる', shortcut: 'Ctrl+W', run: () => void closeTab(t).catch(reportError) },
       ], e.clientX, e.clientY);
     });
-    el.addEventListener('dragover', (e) => { e.preventDefault(); });
-    el.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const from = tabs.findIndex((x) => x.id === Number(e.dataTransfer?.getData('text/tab-id')));
-      const to = tabs.indexOf(t);
-      if (from < 0 || to < 0 || from === to) return;
-      const [moved] = tabs.splice(from, 1);
-      tabs.splice(to, 0, moved);
-      renderTabs();
-    });
     tabBar.append(el);
   }
   tabBar.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
-// ドラッグ中にポインタがウィンドウの外へ出たか (dragend の座標が取れない環境向け)
-let dragLeftWindow = false;
-document.addEventListener('dragover', () => { dragLeftWindow = false; });
-document.addEventListener('dragleave', (e) => {
-  if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) dragLeftWindow = true;
-});
+// タブのドラッグ。HTML のドラッグ&ドロップはウィンドウの外で離した位置が取れないため、
+// ポインタをキャプチャして追う (ボタンを押している間はウィンドウの外の位置も届く)
+let tabDrag: { tab: Tab; x: number; y: number; moved: boolean } | null = null;
+
+const outsideWindow = (e: PointerEvent) => e.clientX < 0 || e.clientY < 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight;
+
+function tabAt(x: number, y: number) {
+  return document.elementFromPoint(x, y)?.closest<HTMLElement>('.tab') ?? null;
+}
 
 // 表示中のタブの状態をタブに書き戻す
 function captureCurrent() {
