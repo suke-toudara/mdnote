@@ -56,6 +56,8 @@ import { defaultHandlers } from 'mdast-util-to-markdown';
 import type { Handle } from 'mdast-util-to-markdown';
 import { offsetTopsOf, replaceRange, scrollToPos, setupSourceEditor } from './source-editor';
 import { looksLikeTsv, tsvToMarkdownTable } from './tsv';
+import { setupTerminal } from './terminal';
+import { colorOutside, openColorPopup, remarkTextColor, selectionColor, textColorHandler, textColorIcon, textColorSchema } from './text-color';
 
 type Mode = 'wysiwyg' | 'split' | 'source';
 type Theme = 'system' | 'light' | 'paper' | 'sepia' | 'dark' | 'graphite' | 'ocean';
@@ -285,6 +287,16 @@ const crepe = new Crepe({
       proxyDomURL: (url) => resolveImageUrl(url, cur.doc.path),
     },
     [CrepeFeature.Placeholder]: { text: '入力するか「/」でメニュー' },
+    [CrepeFeature.Toolbar]: {
+      buildToolbar: (builder) => {
+        builder.getGroup('formatting').addItem('text-color', {
+          icon: textColorIcon,
+          label: '文字の色',
+          active: (ctx) => selectionColor(ctx) !== null,
+          onRun: openColorPopup,
+        });
+      },
+    },
   },
 });
 // 出力する Markdown の記法を一般的なものに揃える
@@ -295,10 +307,16 @@ crepe.editor.config((ctx) => {
     emphasis: '*' as const,
     rule: '-' as const,
     // 段落内の改行は「\」ではなく、行末の半角スペース 2 つで書く (表の中など改行できない所は既定のまま)
-    handlers: { ...prev.handlers, break: lineBreakHandler },
+    handlers: {
+      ...prev.handlers,
+      break: lineBreakHandler,
+      textColor: textColorHandler,
+      strong: colorOutside(prev.handlers?.strong ?? defaultHandlers.strong),
+      emphasis: colorOutside(prev.handlers?.emphasis ?? defaultHandlers.emphasis),
+    },
   }));
 });
-crepe.editor.use(excelLikeTable).use(brInTableCells);
+crepe.editor.use(excelLikeTable).use(brInTableCells).use(remarkTextColor).use(textColorSchema);
 crepe.on((api) => api.markdownUpdated(() => syncFromEditor()));
 await crepe.create();
 cur.lastEditorMd = crepe.getMarkdown();
@@ -1655,9 +1673,40 @@ document.addEventListener('click', (e) => {
   if (!(e.target as HTMLElement).closest('.toolbar-menu')) toolbarMenus.forEach((menu) => { menu.open = false; });
 });
 
+// ---- ターミナル ----
+
+const terminalButton = $<HTMLButtonElement>('btn-terminal');
+const terminal = setupTerminal({
+  panel: $('terminal-panel'),
+  // 開いたフォルダ、なければ文書のあるフォルダで起動する
+  cwd: async () => fileTree.current ?? cur.doc.path?.replace(/[\\/][^\\/]*$/, '') ?? null,
+  onToggle: (shown) => {
+    terminalButton.classList.toggle('active', shown);
+    terminalButton.setAttribute('aria-expanded', String(shown));
+  },
+});
+terminalButton.hidden = !isTauri;
+terminalButton.addEventListener('click', () => terminal.toggle());
+
+// ターミナルにフォーカスがあっても切り替えられるよう、ターミナルより先に受け取る
+window.addEventListener(
+  'keydown',
+  (e) => {
+    if (!isTauri || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+    if (e.key.toLowerCase() !== 'j' && e.code !== 'Backquote') return;
+    e.preventDefault();
+    e.stopPropagation();
+    terminal.toggle();
+    if (!terminal.shown) view().focus();
+  },
+  true,
+);
+
 window.addEventListener('keydown', (e) => {
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
   const key = e.key.toLowerCase();
+  // ターミナルでの Ctrl+W や Ctrl+N などはシェルに渡す
+  if ((e.target as HTMLElement).closest?.('.terminal-panel')) return;
   const actions: Record<string, (() => void) | undefined> = {
     s: run(() => doSave(cur, e.shiftKey)),
     p: run(doExportPdf),

@@ -428,6 +428,80 @@ button.active {
   position: relative;
 }
 
+/* ---- ターミナル ---- */
+
+.terminal-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 260px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--source-bg);
+}
+
+.terminal-panel[hidden] {
+  display: none;
+}
+
+.terminal-resizer {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
+  z-index: 2;
+}
+
+.terminal-resizer:hover {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.terminal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px 3px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.terminal-head strong {
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.terminal-cwd {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  min-width: 0;
+}
+
+.terminal-head .spacer {
+  flex: 1;
+}
+
+.terminal-head button {
+  padding: 1px 8px;
+  font-size: 12px;
+}
+
+.terminal-host {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 0 0 8px;
+}
+
+.terminal-host .xterm {
+  height: 100%;
+}
+
 /* チャット */
 .claude-panel {
   width: clamp(300px, 29vw, 420px);
@@ -1086,6 +1160,52 @@ body.outline-hidden .outline {
   font-weight: 700;
 }
 
+/* ---- 文字の色 ---- */
+
+.text-color-popup {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+.text-color-popup button {
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.text-color-popup .swatch {
+  width: 28px;
+  padding: 0;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--swatch);
+}
+
+.text-color-popup button:hover {
+  background: var(--hover);
+}
+
+.text-color-popup .swatch.current {
+  border-color: var(--swatch);
+}
+
+.text-color-popup .reset {
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* ---- 表: 列幅を内容に合わせ、入りきらない表は横スクロールにする ---- */
 
 .wysiwyg-pane .milkdown .milkdown-table-block {
@@ -1242,6 +1362,8 @@ body.link-mod .ProseMirror a[href] {
   .milkdown-block-handle,
   .milkdown-slash-menu,
   .milkdown-toolbar,
+  .text-color-popup,
+  .terminal-panel,
   .milkdown-link-preview,
   .milkdown-link-edit,
   .milkdown-table-block .cell-handle,

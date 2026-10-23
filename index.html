@@ -52,6 +52,7 @@
           </div>
         </div>
         <div class="toolbar-actions toolbar-preferences">
+          <button id="btn-terminal" type="button" aria-expanded="false" aria-controls="terminal-panel" title="ターミナル (Ctrl+J)" hidden>ターミナル</button>
           <button id="btn-claude" type="button" aria-expanded="false" aria-controls="claude-panel" title="チャットを開く">チャット</button>
           <button id="btn-autosave" class="autosave-btn" title="自動保存">自動保存</button>
           <button id="btn-settings" title="表示と編集の設定">設定</button>
@@ -126,6 +127,17 @@
             <div id="editor"></div>
           </section>
         </main>
+        <section id="terminal-panel" class="terminal-panel" aria-label="ターミナル" hidden>
+          <div class="terminal-resizer" title="ドラッグで高さを変える"></div>
+          <div class="terminal-head">
+            <strong>ターミナル</strong>
+            <span class="terminal-cwd"></span>
+            <span class="spacer"></span>
+            <button class="terminal-restart" type="button" title="シェルを終了して新しく開く">再起動</button>
+            <button class="terminal-close" type="button" title="隠す (Ctrl+J)" aria-label="ターミナルを隠す">×</button>
+          </div>
+          <div class="terminal-host"></div>
+        </section>
       </div>
       <aside id="claude-panel" class="claude-panel" aria-label="チャット" hidden>
         <div class="claude-head"><strong>チャット</strong><button id="claude-close" type="button" aria-label="チャットを閉じる">×</button></div>
@@ -203,7 +215,7 @@
     </dialog>
     <dialog id="shortcuts-dialog" class="diff-dialog" aria-labelledby="shortcuts-title">
       <h2 id="shortcuts-title">ショートカット</h2>
-      <dl class="shortcuts-list"><dt>Ctrl/⌘ + S</dt><dd>保存</dd><dt>Ctrl/⌘ + Shift + S</dt><dd>名前を付けて保存</dd><dt>Ctrl/⌘ + O</dt><dd>ファイルを開く</dd><dt>Ctrl/⌘ + Shift + O</dt><dd>フォルダを開く</dd><dt>Ctrl/⌘ + F</dt><dd>検索</dd><dt>Ctrl/⌘ + H</dt><dd>検索と置換</dd><dt>Ctrl/⌘ + /</dt><dd>表示モード切替</dd><dt>Ctrl/⌘ + Tab / Shift + Tab</dt><dd>タブ切替</dd><dt>Ctrl/⌘ + W</dt><dd>タブを閉じる</dd><dt>Ctrl/⌘ + P</dt><dd>印刷・PDF</dd><dt>Ctrl/⌘ + Shift + E</dt><dd>サイドバー切替</dd><dt>ソース表示で Tab / Shift + Tab</dt><dd>インデント / 逆インデント</dd></dl>
+      <dl class="shortcuts-list"><dt>Ctrl/⌘ + S</dt><dd>保存</dd><dt>Ctrl/⌘ + Shift + S</dt><dd>名前を付けて保存</dd><dt>Ctrl/⌘ + O</dt><dd>ファイルを開く</dd><dt>Ctrl/⌘ + Shift + O</dt><dd>フォルダを開く</dd><dt>Ctrl/⌘ + F</dt><dd>検索</dd><dt>Ctrl/⌘ + H</dt><dd>検索と置換</dd><dt>Ctrl/⌘ + /</dt><dd>表示モード切替</dd><dt>Ctrl/⌘ + Tab / Shift + Tab</dt><dd>タブ切替</dd><dt>Ctrl/⌘ + W</dt><dd>タブを閉じる</dd><dt>Ctrl/⌘ + P</dt><dd>印刷・PDF</dd><dt>Ctrl/⌘ + Shift + E</dt><dd>サイドバー切替</dd><dt>Ctrl + J</dt><dd>ターミナルの表示切替</dd><dt>ターミナルで Ctrl + Shift + C / V</dt><dd>コピー / 貼り付け</dd><dt>ソース表示で Tab / Shift + Tab</dt><dd>インデント / 逆インデント</dd></dl>
       <div class="dialog-actions"><button id="shortcuts-close">閉じる</button></div>
     </dialog>
     <script type="module" src="/src/main.ts"></script>
