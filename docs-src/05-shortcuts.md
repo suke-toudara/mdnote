@@ -14,7 +14,12 @@ title = "キーボードショートカット"
 | `Ctrl + P` | 印刷・PDF 設定 |
 | `Ctrl + F` | 検索 |
 | `Ctrl + H` | 置換 |
+| `Ctrl + Shift + P` | ファイルを名前で探して開く |
+| `Ctrl + Shift + F` | フォルダ内を検索 |
 | `Ctrl + /` | 表示モード切替 |
+| `Ctrl + Shift + Enter` | 集中モード |
+| `Ctrl + Shift + C` / `Ctrl + Shift + V` | 書式なしでコピー / 貼り付け（プレビュー編集） |
+| `[[` | ファイルへのリンクを挿入（フォルダを開いているとき） |
 | `Ctrl + Shift + E` | サイドバー表示切替 |
 | `Ctrl + Tab` / `Ctrl + Shift + Tab` | 次 / 前のタブ |
 | `Ctrl + W` | 現在のタブを閉じる |

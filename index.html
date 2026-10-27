@@ -45,6 +45,7 @@
         <div class="toolbar-actions toolbar-view">
           <button id="btn-outline" class="icon-btn" title="目次の表示切替 (Ctrl+Shift+E)" aria-label="目次の表示切替"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 4h11M5 8h8.5M5 12h8.5"/></svg></button>
           <button id="btn-find" class="icon-btn" title="検索・置換 (Ctrl+F / Ctrl+H)" aria-label="検索・置換"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg></button>
+          <button id="btn-focus" class="icon-btn" title="集中モード (Ctrl+Shift+Enter)" aria-label="集中モード"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 5.5V3a1 1 0 0 1 1-1h2.5M10.5 2H13a1 1 0 0 1 1 1v2.5M14 10.5V13a1 1 0 0 1-1 1h-2.5M5.5 14H3a1 1 0 0 1-1-1v-2.5"/><circle cx="8" cy="8" r="1.6"/></svg></button>
           <div class="group mode" title="表示切替 (Ctrl+/)" aria-label="表示モード">
             <button data-mode="wysiwyg" class="active">プレビュー編集</button>
             <button data-mode="split">分割</button>
@@ -82,6 +83,8 @@
         <div class="sidebar-tabs" role="tablist">
           <button data-panel="outline" class="active">目次</button>
           <button id="tab-files" data-panel="files">ファイル</button>
+          <button id="tab-search" data-panel="search" title="フォルダ内を検索 (Ctrl+Shift+F)">検索</button>
+          <button id="tab-links" data-panel="links" title="この文書へのリンク">リンク</button>
         </div>
         <div id="panel-outline">
           <ul id="outline-list"></ul>
@@ -97,6 +100,19 @@
           <div class="files-actions">
             <button id="btn-folder">フォルダを開く…</button>
           </div>
+        </div>
+        <div id="panel-search" class="folder-search" hidden>
+          <div class="folder-search-row">
+            <input class="folder-search-input" type="text" placeholder="フォルダ内を検索" spellcheck="false" />
+            <button class="folder-search-case toggle" title="大文字と小文字を区別">Aa</button>
+            <button class="folder-search-regex toggle" title="正規表現">.*</button>
+          </div>
+          <div class="folder-search-status"></div>
+          <ul class="folder-search-results search-results"></ul>
+        </div>
+        <div id="panel-links" class="backlinks" hidden>
+          <div class="backlinks-title outline-title">被リンク</div>
+          <ul class="backlinks-list search-results"></ul>
         </div>
       </aside>
 
@@ -161,6 +177,7 @@
       <span id="status-count"></span>
     </footer>
 
+    <button id="focus-exit" class="focus-exit" type="button" title="Ctrl+Shift+Enter">集中モードを終了</button>
     <div id="context-menu" class="context-menu" role="menu" hidden></div>
     <input id="file-input" type="file" accept=".md,.markdown,.txt,text/markdown" hidden />
     <dialog id="diff-dialog" class="diff-dialog" aria-labelledby="diff-title">
@@ -215,7 +232,7 @@
     </dialog>
     <dialog id="shortcuts-dialog" class="diff-dialog" aria-labelledby="shortcuts-title">
       <h2 id="shortcuts-title">ショートカット</h2>
-      <dl class="shortcuts-list"><dt>Ctrl/⌘ + S</dt><dd>保存</dd><dt>Ctrl/⌘ + Shift + S</dt><dd>名前を付けて保存</dd><dt>Ctrl/⌘ + O</dt><dd>ファイルを開く</dd><dt>Ctrl/⌘ + Shift + O</dt><dd>フォルダを開く</dd><dt>Ctrl/⌘ + F</dt><dd>検索</dd><dt>Ctrl/⌘ + H</dt><dd>検索と置換</dd><dt>Ctrl/⌘ + /</dt><dd>表示モード切替</dd><dt>Ctrl/⌘ + Tab / Shift + Tab</dt><dd>タブ切替</dd><dt>Ctrl/⌘ + W</dt><dd>タブを閉じる</dd><dt>Ctrl/⌘ + P</dt><dd>印刷・PDF</dd><dt>Ctrl/⌘ + Shift + E</dt><dd>サイドバー切替</dd><dt>Ctrl + J</dt><dd>ターミナルの表示切替</dd><dt>ターミナルで Ctrl + Shift + C / V</dt><dd>コピー / 貼り付け</dd><dt>ソース表示で Tab / Shift + Tab</dt><dd>インデント / 逆インデント</dd></dl>
+      <dl class="shortcuts-list"><dt>Ctrl/⌘ + S</dt><dd>保存</dd><dt>Ctrl/⌘ + Shift + S</dt><dd>名前を付けて保存</dd><dt>Ctrl/⌘ + O</dt><dd>ファイルを開く</dd><dt>Ctrl/⌘ + Shift + O</dt><dd>フォルダを開く</dd><dt>Ctrl/⌘ + F</dt><dd>検索</dd><dt>Ctrl/⌘ + H</dt><dd>検索と置換</dd><dt>Ctrl/⌘ + Shift + P</dt><dd>ファイルを名前で探す</dd><dt>Ctrl/⌘ + Shift + F</dt><dd>フォルダ内を検索</dd><dt>Ctrl/⌘ + /</dt><dd>表示モード切替</dd><dt>Ctrl/⌘ + Shift + Enter</dt><dd>集中モード</dd><dt>Ctrl/⌘ + Shift + C / V</dt><dd>書式なしでコピー / 貼り付け</dd><dt>[[</dt><dd>ファイルへのリンクを挿入</dd><dt>Ctrl/⌘ + Tab / Shift + Tab</dt><dd>タブ切替</dd><dt>Ctrl/⌘ + W</dt><dd>タブを閉じる</dd><dt>Ctrl/⌘ + P</dt><dd>印刷・PDF</dd><dt>Ctrl/⌘ + Shift + E</dt><dd>サイドバー切替</dd><dt>Ctrl + J</dt><dd>ターミナルの表示切替</dd><dt>ターミナルで Ctrl + Shift + C / V</dt><dd>コピー / 貼り付け</dd><dt>ソース表示で Tab / Shift + Tab</dt><dd>インデント / 逆インデント</dd></dl>
       <div class="dialog-actions"><button id="shortcuts-close">閉じる</button></div>
     </dialog>
     <script type="module" src="/src/main.ts"></script>

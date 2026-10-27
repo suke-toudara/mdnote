@@ -83,6 +83,8 @@ export class FileTree {
     this.root.replaceChildren(...list.children);
     this.setActive(this.active);
     this.markSelected();
+    // ファイルの増減を、一覧を使うほかの機能 (検索など) に知らせる
+    this.root.dispatchEvent(new CustomEvent('tree-refresh'));
   }
 
   private markSelected() {

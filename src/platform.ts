@@ -108,6 +108,8 @@ export interface DirItem {
   name: string;
   path: string;
   isDirectory: boolean;
+  // シンボリックリンク (フォルダ全体を辿るときに、循環しないよう中に入らない)
+  isSymlink: boolean;
 }
 
 // フォルダ内のサブフォルダと Markdown ファイル。隠しファイルや node_modules は除く
@@ -117,7 +119,7 @@ export async function listDir(dir: string): Promise<DirItem[]> {
   for (const e of entries) {
     if (e.name.startsWith('.') || e.name === 'node_modules') continue;
     if (!e.isDirectory && !isMarkdownPath(e.name)) continue;
-    items.push({ name: e.name, path: await join(dir, e.name), isDirectory: e.isDirectory });
+    items.push({ name: e.name, path: await join(dir, e.name), isDirectory: e.isDirectory, isSymlink: e.isSymlink });
   }
   const collator = new Intl.Collator('ja', { numeric: true });
   return items.sort((a, b) => Number(b.isDirectory) - Number(a.isDirectory) || collator.compare(a.name, b.name));

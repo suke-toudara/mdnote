@@ -605,7 +605,9 @@ body.outline-hidden .outline {
 }
 
 #panel-outline,
-#panel-files {
+#panel-files,
+#panel-search,
+#panel-links {
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -617,7 +619,9 @@ body.outline-hidden .outline {
 }
 
 #panel-outline[hidden],
-#panel-files[hidden] {
+#panel-files[hidden],
+#panel-search[hidden],
+#panel-links[hidden] {
   display: none;
 }
 
@@ -1445,5 +1449,317 @@ body.link-mod .ProseMirror a[href] {
     --crepe-color-inline-area: #f3f4f6 !important;
     background: #ffffff !important;
     color: #1f2328 !important;
+  }
+}
+
+/* ---- 集中モード ---- */
+
+.focus-exit {
+  display: none;
+}
+
+body.focus-mode .focus-exit {
+  display: block;
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  z-index: 20;
+  font-size: 12px;
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+
+body.focus-mode .focus-exit:hover,
+body.focus-mode .focus-exit:focus-visible {
+  opacity: 1;
+}
+
+body.focus-mode :is(.toolbar, .outline, .tab-bar, .statusbar, .claude-panel) {
+  display: none;
+}
+
+/* 編集中のブロック以外を薄くする */
+body.focus-mode .wysiwyg-pane .ProseMirror > :not(.focus-current) {
+  opacity: 0.3;
+  transition: opacity 0.2s;
+}
+
+body.focus-mode .wysiwyg-pane .ProseMirror > .focus-current {
+  transition: opacity 0.2s;
+}
+
+/* 画面が広くなるので、本文は読みやすい幅で中央に置く */
+body.focus-mode .wysiwyg-pane .milkdown .ProseMirror {
+  max-width: 860px;
+  margin: 0 auto;
+  padding-top: 64px;
+}
+
+/* ---- Mermaid の図 ---- */
+
+.milkdown-code-block .preview .mermaid-diagram {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 6px;
+  background: #fff;
+  overflow-x: auto;
+}
+
+.milkdown-code-block .preview .mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.milkdown-code-block .preview .mermaid-error {
+  margin: 0;
+  color: var(--danger);
+  white-space: pre-wrap;
+  text-align: left;
+  font-size: 12px;
+}
+
+/* ---- 画像の幅 ---- */
+
+/* 高さ方向のつまみ (比率を代替テキストに書き込む) の代わりに、右下の角で幅を変える */
+.wysiwyg-pane .milkdown .milkdown-image-block .image-resize-handle {
+  display: none;
+}
+
+.image-width-handle {
+  position: fixed;
+  z-index: 15;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  background: var(--bg);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.image-width-handle[hidden] {
+  display: none;
+}
+
+@media print {
+  .image-width-handle {
+    display: none !important;
+  }
+}
+
+/* ---- フォルダ内検索・被リンク ---- */
+
+#panel-search {
+  display: flex;
+  flex-direction: column;
+}
+
+.folder-search-row {
+  display: flex;
+  gap: 4px;
+  padding: 0 8px 6px;
+}
+
+.folder-search-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+}
+
+.folder-search-input:focus {
+  border-color: var(--accent);
+}
+
+.folder-search-input.invalid {
+  border-color: var(--danger);
+}
+
+.folder-search-row button {
+  padding: 3px 6px;
+  font-size: 12px;
+}
+
+.folder-search-status {
+  padding: 0 12px 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.folder-search-status:empty {
+  display: none;
+}
+
+.search-results,
+.search-results ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.search-results {
+  flex: 1;
+  overflow: auto;
+  padding: 0 6px 12px;
+}
+
+.search-file + .search-file {
+  margin-top: 4px;
+}
+
+.search-file-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--fg);
+}
+
+button.search-file-head:hover {
+  background: var(--hover);
+}
+
+.search-file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+
+.search-count {
+  flex-shrink: 0;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--hover);
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--muted);
+}
+
+.search-hit {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  padding: 3px 6px 3px 18px;
+  font-size: 12px;
+  text-align: left;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-hit:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+.search-hit mark {
+  background: var(--mark);
+  color: var(--fg);
+  border-radius: 2px;
+}
+
+/* ---- クイックオープン・ファイルへのリンク ---- */
+
+.palette {
+  width: min(560px, calc(100vw - 32px));
+  margin: 12vh auto auto;
+  padding: 0;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.palette::backdrop {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.palette input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 15px;
+  padding: 12px 14px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  outline: none;
+}
+
+.palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: min(420px, 60vh);
+  overflow: auto;
+}
+
+.palette-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.palette-item.active {
+  background: var(--hover);
+}
+
+.palette-label {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.palette-detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.palette-empty {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* 集中モードのまま印刷・PDF にしても、薄くした段落を元の濃さで出す */
+@media print {
+  body.focus-mode .wysiwyg-pane .ProseMirror > :not(.focus-current) {
+    opacity: 1;
+  }
+
+  .focus-exit {
+    display: none !important;
   }
 }

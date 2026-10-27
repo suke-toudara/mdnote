@@ -150,8 +150,12 @@ export function closeColorPopup() {
 
 export function openColorPopup(ctx: Ctx) {
   closeColorPopup();
-  const anchor = document.querySelector<HTMLElement>('.milkdown-toolbar');
-  if (!anchor) return;
+  // 書式ツールバーが出ていればその近く、なければ (右クリックメニューから開いたとき) 選択範囲の近くに出す
+  const toolbar = document.querySelector<HTMLElement>('.milkdown-toolbar');
+  const view = ctx.get(editorViewCtx);
+  const toolbarRect = toolbar?.getBoundingClientRect();
+  const start = view.coordsAtPos(view.state.selection.from);
+  const rect = toolbarRect?.width ? toolbarRect : { left: start.left, top: start.top, bottom: start.bottom };
   const current = selectionColor(ctx);
   const el = document.createElement('div');
   el.className = 'text-color-popup';
@@ -183,7 +187,6 @@ export function openColorPopup(ctx: Ctx) {
   el.append(button('色を外す', null));
   document.body.append(el);
   // ツールバーの下は選んだ文字に重なるので、入るなら上に出す
-  const rect = anchor.getBoundingClientRect();
   const width = el.offsetWidth;
   const above = rect.top - el.offsetHeight - 4;
   el.style.left = `${Math.max(4, Math.min(rect.left, window.innerWidth - width - 8))}px`;

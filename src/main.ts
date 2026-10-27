@@ -2,7 +2,9 @@ import { Crepe, CrepeFeature } from '@milkdown/crepe';
 import { diffLines } from 'diff';
 import { editorViewCtx, remarkStringifyOptionsCtx } from '@milkdown/kit/core';
 import { type EditorState, TextSelection } from '@milkdown/kit/prose/state';
-import { insert, replaceAll } from '@milkdown/kit/utils';
+import { callCommand, insert, replaceAll } from '@milkdown/kit/utils';
+import { toggleEmphasisCommand, toggleInlineCodeCommand, toggleStrongCommand } from '@milkdown/kit/preset/commonmark';
+import { toggleStrikethroughCommand } from '@milkdown/kit/preset/gfm';
 import '@fontsource/m-plus-rounded-1c/400.css';
 import '@fontsource/m-plus-rounded-1c/500.css';
 import '@fontsource/m-plus-rounded-1c/700.css';
@@ -17,6 +19,11 @@ import './style.css';
 import { FileTree } from './filetree';
 import { setupClaude } from './claude';
 import { setupLinks, slugify } from './links';
+import { Vault, dirOf, linkDestination, listMarkdownTree, nameOf, relativePath } from './vault';
+import { type PaletteItem, openPalette } from './palette';
+import { FolderSearch, type SearchQuery } from './folder-search';
+import { BacklinksPanel } from './backlinks';
+import { fileLinkInput, insertLinkInEditor, setFileLinkTrigger } from './file-link';
 import { EditorTarget, FindBar, SourceTarget } from './find';
 import { parseHeadings, renderOutline, type Heading } from './outline';
 import {
@@ -29,6 +36,7 @@ import {
   isMarkdownPath,
   isMainWindow,
   isTauri,
+  listDir,
   newWindowLabel,
   onCloseRequested,
   openNewWindow,
@@ -52,6 +60,11 @@ import { addRecent, addRecentFolder, orphanDraftKeys, readDrafts, readRecent, re
 import { showContextMenu } from './context-menu';
 import { brInTableCells, excelLikeTable, selectionInTable } from './table-edit';
 import { setupTableMenu } from './table-menu';
+import { setupEditorClipboard, takePlainPaste, insertPlainText } from './editor-clipboard';
+import { setupEditorMenu } from './editor-menu';
+import { focusCurrentBlock, focusModeOn, setFocusMode } from './focus-mode';
+import { setupMermaid } from './mermaid';
+import { imageBlockWithWidth, imageWidthHandle } from './image-size';
 import { defaultHandlers } from 'mdast-util-to-markdown';
 import type { Handle } from 'mdast-util-to-markdown';
 import { offsetTopsOf, replaceRange, scrollToPos, setupSourceEditor } from './source-editor';
@@ -61,7 +74,8 @@ import { colorOutside, openColorPopup, remarkTextColor, selectionColor, textColo
 
 type Mode = 'wysiwyg' | 'split' | 'source';
 type Theme = 'system' | 'light' | 'paper' | 'sepia' | 'dark' | 'graphite' | 'ocean';
-type Panel = 'outline' | 'files';
+type Panel = 'outline' | 'files' | 'search' | 'links';
+const PANELS: Panel[] = ['outline', 'files', 'search', 'links'];
 const MODES: Mode[] = ['wysiwyg', 'split', 'source'];
 const THEMES: Theme[] = ['system', 'light', 'paper', 'sepia', 'dark', 'graphite', 'ocean'];
 const THEME_LABEL: Record<Theme, string> = { system: 'システムに合わせる', light: 'ライト', paper: 'ペーパー', sepia: 'セピア', dark: 'ダーク', graphite: 'グラファイト', ocean: 'ディープブルー' };
@@ -87,6 +101,7 @@ Excel やスプレッドシートの範囲をコピーして貼り付けると�
 - 文字を選択すると書式ツールバー
 - [ ] チェックボックスはクリックで切り替え
 - 画像は貼り付けかドラッグ＆ドロップで \`images/\` に保存
+- \`[[\` でフォルダ内のファイルへのリンク、\`mermaid\` のコードブロックで図
 
 ## ショートカット
 
@@ -94,6 +109,9 @@ Excel やスプレッドシートの範囲をコピーして貼り付けると�
 | --- | --- |
 | Ctrl+/ | プレビュー編集・分割・ソースの切り替え |
 | Ctrl+F / Ctrl+H | 検索 / 置換 |
+| Ctrl+Shift+P / Ctrl+Shift+F | ファイルを名前で探す / フォルダ内を検索 |
+| Ctrl+Shift+Enter | 集中モード |
+| Ctrl+Shift+C / Ctrl+Shift+V | 書式なしでコピー / 貼り付け |
 | Ctrl+Shift+E | サイドバーの表示切り替え |
 | Ctrl+S / Ctrl+Shift+S | 保存 / 名前を付けて保存 |
 | Ctrl+P | PDF として書き出す |
@@ -287,6 +305,7 @@ const crepe = new Crepe({
       proxyDomURL: (url) => resolveImageUrl(url, cur.doc.path),
     },
     [CrepeFeature.Placeholder]: { text: '入力するか「/」でメニュー' },
+    [CrepeFeature.CodeMirror]: { previewLabel: 'プレビュー', previewLoading: '描画しています…', previewToggleText: (previewOnly) => (previewOnly ? '編集' : 'コードを隠す') },
     [CrepeFeature.Toolbar]: {
       buildToolbar: (builder) => {
         builder.getGroup('formatting').addItem('text-color', {
@@ -316,7 +335,8 @@ crepe.editor.config((ctx) => {
     },
   }));
 });
-crepe.editor.use(excelLikeTable).use(brInTableCells).use(remarkTextColor).use(textColorSchema);
+setupMermaid(crepe.editor);
+crepe.editor.use(excelLikeTable).use(brInTableCells).use(remarkTextColor).use(textColorSchema).use(focusCurrentBlock).use(imageBlockWithWidth).use(imageWidthHandle).use(fileLinkInput);
 crepe.on((api) => api.markdownUpdated(() => syncFromEditor()));
 await crepe.create();
 cur.lastEditorMd = crepe.getMarkdown();
@@ -403,6 +423,23 @@ function reportError(e: unknown) {
 
 setupTableMenu(view, (message) => showStatus(message));
 
+const clipboardHandlers = {
+  pasteMarkdown: (text: string) => crepe.editor.action(insert(text, !text.includes('\n'))),
+  notify: (message: string, isError?: boolean) => showStatus(message, isError),
+};
+setupEditorClipboard(view, clipboardHandlers);
+setupEditorMenu(view, {
+  ...clipboardHandlers,
+  bold: () => crepe.editor.action(callCommand(toggleStrongCommand.key)),
+  italic: () => crepe.editor.action(callCommand(toggleEmphasisCommand.key)),
+  strike: () => crepe.editor.action(callCommand(toggleStrikethroughCommand.key)),
+  code: () => crepe.editor.action(callCommand(toggleInlineCodeCommand.key)),
+  color: () => crepe.editor.action(openColorPopup),
+  openLink: (href) => void openLink(href).catch(reportError),
+  canInsertFileLink: () => !!vault.root && !!cur.doc.path,
+  insertFileLink: () => void pickFileLink((label, rel) => insertLinkInEditor(view(), label, rel), () => view().focus()),
+});
+
 function updateCount() {
   const md = cur.markdown;
   const chars = [...md.replace(/\s/g, '')].length;
@@ -430,6 +467,7 @@ function updateDocUi() {
   setWindowTitle(`${cur.dirty ? '● ' : ''}${cur.doc.name} - mdnote`);
   renderTabs();
   fileTree.setActive(cur.doc.path);
+  refreshBacklinks();
 }
 
 function setDirty(t: Tab, value: boolean) {
@@ -1170,9 +1208,9 @@ const fileTree = new FileTree($('file-tree'), {
 
 function setPanel(panel: Panel) {
   panelButtons.forEach((b) => b.classList.toggle('active', b.dataset.panel === panel));
-  $('panel-outline').hidden = panel !== 'outline';
-  $('panel-files').hidden = panel !== 'files';
+  for (const p of PANELS) $(`panel-${p}`).hidden = p !== panel;
   savePref('panel', panel);
+  if (panel === 'links') refreshBacklinks(true);
 }
 
 // reveal: サイドバーをファイル一覧に切り替えて表示する (起動時の復元では前回の表示のままにする)
@@ -1209,6 +1247,133 @@ async function doOpenFolder() {
 
 $('file-tree').addEventListener('tree-change', () => {
   if (isMainWindow) savePref('expandedDirs', JSON.stringify(fileTree.expandedDirs));
+});
+
+// ---- フォルダ全体 (クイックオープン・フォルダ内検索・被リンク・ファイルへのリンク) ----
+
+// 開発用: ブラウザ版でもフォルダの機能を試せるよう、window.__mdnoteDevVault に置いた仮のファイルを使う
+type DevVault = { root: string; files: Record<string, string> };
+const devVault = import.meta.env.DEV && !isTauri ? ((window as { __mdnoteDevVault?: DevVault }).__mdnoteDevVault ?? null) : null;
+
+const vault = new Vault(
+  devVault
+    ? {
+        list: async () => Object.keys(devVault.files),
+        read: async (path) => {
+          if (!(path in devVault.files)) throw new Error(`見つかりません: ${path}`);
+          return devVault.files[path];
+        },
+      }
+    : { list: (root) => listMarkdownTree(root, listDir), read: async (path) => (await readDoc(path)).content },
+  () => fileTree.current ?? devVault?.root ?? null,
+  (path) => tabs.find((t) => t.doc.path === path)?.markdown,
+);
+
+$('file-tree').addEventListener('tree-refresh', () => {
+  vault.invalidate();
+  refreshBacklinks(true);
+});
+
+async function openVaultFile(path: string) {
+  if (devVault && !tabs.some((t) => t.doc.path === path)) {
+    openInTab({ path, name: nameOf(path) }, devVault.files[path] ?? '');
+    return;
+  }
+  await openPath(path);
+}
+
+// 開いた文書の中で、query の index 番目の一致へ移動する (タブの切り替えでスクロール位置が戻された後に)
+function revealInDoc(query: SearchQuery, index: number) {
+  window.setTimeout(() => {
+    if (!findBar.openAt(query.text, query.caseSensitive, query.useRegex, index)) {
+      showStatus('一致した箇所はプレビューには表示されない部分です (ソース表示で確認できます)');
+    }
+  }, 80);
+}
+
+interface FileItem extends PaletteItem {
+  path: string;
+}
+
+function fileItem(path: string): FileItem {
+  const rel = vault.relative(path);
+  // フォルダの外のファイル (最近開いたもの) は場所を絶対パスで示す
+  const detail = rel === path ? dirOf(path) : rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
+  return { path, label: nameOf(path), detail };
+}
+
+// クイックオープン: 最近開いたファイルを先に、続けてフォルダ内のファイルを並べる
+function openQuickOpen() {
+  const items = vault
+    .list()
+    .catch(() => [] as string[])
+    .then((files) => [...new Set([...readRecent().map((r) => r.path), ...files])].map(fileItem));
+  openPalette<FileItem>({
+    placeholder: 'ファイル名で探す (Enter で開く)',
+    items,
+    emptyText: isTauri || devVault ? 'フォルダを開くと、その中のファイルを名前で探せます' : 'ファイルを名前で探す機能はデスクトップ版で使えます',
+    pick: (item) => void openVaultFile(item.path).catch(() => showStatus(`開けませんでした: ${item.path}`, true)),
+    cancel: () => (mode === 'source' ? source.focus() : view().focus()),
+  });
+}
+
+function openFolderSearch() {
+  setSidebarVisible(true);
+  setPanel('search');
+  const selected = mode === 'source' ? source.value.slice(source.selectionStart, source.selectionEnd) : (window.getSelection()?.toString() ?? '');
+  folderSearch.focus(selected);
+}
+
+const folderSearch = new FolderSearch($('panel-search'), vault, {
+  open: (path, query, index) => void openVaultFile(path).then(() => revealInDoc(query, index), reportError),
+});
+
+const backlinks = new BacklinksPanel($('panel-links'), vault, {
+  open: (path, text, index) => void openVaultFile(path).then(() => revealInDoc({ text, caseSensitive: true, useRegex: false }, index), reportError),
+});
+
+// 被リンクは表示しているときだけ探す。force: 他の文書が変わったかもしれないので探し直す
+let backlinkTarget: string | null | undefined;
+function refreshBacklinks(force = false) {
+  if (force) backlinkTarget = undefined;
+  if ($('panel-links').hidden || document.body.classList.contains('outline-hidden')) return;
+  if (backlinkTarget === cur.doc.path) return;
+  backlinkTarget = cur.doc.path;
+  backlinks.refresh(cur.doc.path);
+}
+
+// 「[[」: フォルダのファイルを選んでリンクを入れる。insert には文書から見た相対パスを渡す
+function pickFileLink(insert: (label: string, relPath: string) => void, cancel: () => void) {
+  if (!vault.root) {
+    showStatus('フォルダを開くと「[[」でファイルへのリンクを挿入できます');
+    return false;
+  }
+  const from = cur.doc.path;
+  if (!from) {
+    showStatus('ファイルへのリンクは、文書を保存してから挿入できます', true);
+    return false;
+  }
+  openPalette<FileItem>({
+    placeholder: 'リンクするファイル (Esc で「[[」のまま)',
+    items: vault.list().then((files) => files.filter((p) => p !== from).map(fileItem)),
+    emptyText: 'フォルダにほかの Markdown ファイルがありません',
+    pick: (item) => insert(nameOf(item.path).replace(/\.(md|markdown)$/i, ''), relativePath(dirOf(from), item.path)),
+    cancel,
+  });
+  return true;
+}
+setFileLinkTrigger(pickFileLink);
+
+// ソース表示の「[[」(コードブロックの中は除く)
+source.addEventListener('input', (e) => {
+  if ((e as InputEvent).data !== '[') return;
+  const pos = source.selectionStart;
+  if (source.value.slice(pos - 2, pos) !== '[[') return;
+  if ((source.value.slice(0, pos).match(/^(```|~~~)/gm)?.length ?? 0) % 2) return;
+  pickFileLink(
+    (label, rel) => replaceRange(source, pos - 2, pos, `[${label}](${linkDestination(rel)})`),
+    () => source.focus(),
+  );
 });
 
 // ---- 目次 ----
@@ -1321,6 +1486,7 @@ function setSidebarVisible(visible: boolean) {
   $('btn-outline').classList.toggle('active', visible);
   $('btn-outline').setAttribute('aria-expanded', String(visible));
   savePref('outline', visible ? 'shown' : 'hidden');
+  if (visible) refreshBacklinks();
 }
 
 const toggleSidebar = () => setSidebarVisible(document.body.classList.contains('outline-hidden'));
@@ -1413,6 +1579,14 @@ $('editor').addEventListener(
   'paste',
   (e) => {
     if ((e.target as HTMLElement).closest('.cm-editor')) return;
+    // Ctrl+Shift+V: 表や画像への変換も Markdown の解釈もせず、文字のまま入れる
+    if (takePlainPaste()) {
+      const text = e.clipboardData?.getData('text/plain') ?? '';
+      e.preventDefault();
+      e.stopPropagation();
+      if (text) insertPlainText(view(), text);
+      return;
+    }
     const images = imageFiles(e.clipboardData?.files);
     if (images.length) {
       e.preventDefault();
@@ -1585,6 +1759,17 @@ function openFind(withReplace: boolean) {
   findBar.open(withReplace, selected);
 }
 
+function toggleFocusMode() {
+  const on = !focusModeOn();
+  setFocusMode(view(), on);
+  $('btn-focus').classList.toggle('active', on);
+  if (on) showStatus('集中モード: Ctrl+Shift+Enter で戻ります');
+  if (mode !== 'source') view().focus();
+}
+
+$('btn-focus').addEventListener('click', toggleFocusMode);
+$('focus-exit').addEventListener('click', toggleFocusMode);
+
 function selectTheme(value: Theme) {
   theme = value;
   savePref('theme', theme);
@@ -1709,14 +1894,15 @@ window.addEventListener('keydown', (e) => {
   if ((e.target as HTMLElement).closest?.('.terminal-panel')) return;
   const actions: Record<string, (() => void) | undefined> = {
     s: run(() => doSave(cur, e.shiftKey)),
-    p: run(doExportPdf),
+    p: e.shiftKey ? openQuickOpen : run(doExportPdf),
     o: e.shiftKey ? run(doOpenFolder) : run(doOpen),
     n: run(doNew),
     w: run(() => closeTab(cur)),
-    f: () => openFind(false),
+    f: e.shiftKey ? openFolderSearch : () => openFind(false),
     h: () => openFind(true),
     '/': () => setMode(MODES[(MODES.indexOf(mode) + 1) % MODES.length]),
     e: e.shiftKey ? toggleSidebar : undefined,
+    enter: e.shiftKey ? toggleFocusMode : undefined,
     tab: () => cycleTab(e.shiftKey ? -1 : 1),
     pagedown: () => cycleTab(1),
     pageup: () => cycleTab(-1),
@@ -1754,7 +1940,7 @@ onCloseRequested(async () => {
 
 setMode(mode);
 setAutosave(autosave);
-setPanel(loadPref('panel', ['outline', 'files'] as const, 'outline'));
+setPanel(loadPref('panel', PANELS, 'outline'));
 const narrowScreen = window.matchMedia('(max-width: 720px)');
 setSidebarVisible(!narrowScreen.matches && loadPref('outline', ['shown', 'hidden'] as const, 'shown') === 'shown');
 narrowScreen.addEventListener('change', (event) => {
@@ -1768,6 +1954,9 @@ if (isTauri) {
   renderRecentFolders();
 } else {
   $('tab-files').hidden = true;
+  // フォルダ全体を使う機能はデスクトップ版のみ (開発用の仮のフォルダがあれば試せる)
+  $('tab-search').hidden = !devVault;
+  $('tab-links').hidden = !devVault;
   setPanel('outline');
 }
 updateDocUi();

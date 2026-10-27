@@ -2,8 +2,8 @@
 // (VS Code と同じ)。リンクのツールチップなど本文の外にあるリンクは普通のクリックで開く。
 
 const LINK_PATTERNS = [
-  // [テキスト](URL "タイトル") / ![画像](URL)
-  /!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)/g,
+  // [テキスト](URL "タイトル") / ![画像](URL) / [テキスト](<空白を含む パス>)
+  /!?\[[^\]]*\]\(\s*(?:<([^>\n]+)>|([^)\s]+))(?:\s+"[^"]*")?\s*\)/g,
   // <https://...>
   /<((?:https?|mailto):[^>\s]+)>/g,
   // 裸の URL
@@ -18,10 +18,17 @@ export function linkAt(text: string, pos: number): string | null {
   const col = pos - start;
   for (const re of LINK_PATTERNS) {
     for (const m of line.matchAll(re)) {
-      if (col >= m.index! && col <= m.index! + m[0].length) return m[1];
+      if (col >= m.index! && col <= m.index! + m[0].length) return m[1] ?? m[2];
     }
   }
   return null;
+}
+
+// 文書中の Markdown リンク (画像は除く) の行き先と位置
+export function markdownLinks(text: string) {
+  return [...text.matchAll(LINK_PATTERNS[0])]
+    .filter((m) => !m[0].startsWith('!'))
+    .map((m) => ({ href: (m[1] ?? m[2]) as string, label: m[0].slice(1, m[0].indexOf('](')), index: m.index! }));
 }
 
 // GitHub と同じ規則で見出しをアンカー名にする

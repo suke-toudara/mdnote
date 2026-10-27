@@ -215,6 +215,25 @@ export class FindBar {
     this.search(true);
   }
 
+  // フォルダ内の検索結果から開いたとき: 条件を合わせて検索し、index 番目の一致へ移動する。一致の数を返す
+  openAt(query: string, caseSensitive: boolean, useRegex: boolean, index: number) {
+    this.caseSensitive = caseSensitive;
+    this.useRegex = useRegex;
+    this.caseBtn.classList.toggle('active', caseSensitive);
+    this.regexBtn.classList.toggle('active', useRegex);
+    this.query.value = query;
+    this.bar.hidden = false;
+    this.bar.classList.remove('with-replace');
+    this.matches = [];
+    this.search();
+    const n = this.matches.length;
+    if (n) {
+      this.current = Math.min(index, n - 1);
+      this.update(true);
+    }
+    return n;
+  }
+
   close() {
     this.getTarget().highlight([], -1);
     this.matches = [];
