@@ -8,7 +8,9 @@ Markdown の見た目を確認しながら、そのまま編集できるエデ�
 
 - プレビューを直接編集するモードと、Markdown を入力するソースモード。両方を並べて表示することもできます。
 - 複数ファイルをタブで開く機能と、フォルダ内のファイル一覧、見出しから移動できる目次。
-- 検索・置換、表の編集、画像の貼り付け、本文フォント・文字サイズ・テーマの切り替え。
+- 検索・置換、表の編集、画像の貼り付けと表示幅の調整、本文フォント・文字サイズ・テーマの切り替え。
+- ファイル名で探して開くクイックオープン、フォルダ内の全文検索、`[[` でのファイルへのリンク挿入と被リンクの一覧。
+- 本文の右クリックメニュー、書式なしでのコピー・貼り付け、Mermaid の図、集中モード。
 - 自動保存、未保存の下書きの復元、ほかのアプリで変更された内容の確認。
 - HTML・PDF への書き出しと、印刷時の用紙・余白の設定。
 - デスクトップ版のチャット。自分の Claude API キーで文書への質問と変更案の作成ができます。
@@ -51,7 +53,7 @@ npm run app:build:appimage # AppImage のみ作成
 
 ## 配布する
 
-バージョンを `package.json`・`package-lock.json`・`src-tauri/Cargo.toml`・`src-tauri/Cargo.lock`・`src-tauri/tauri.conf.json` で揃え、`v0.1.0` のようなタグを push すると、GitHub Actions が Linux x86_64 向けの deb と AppImage を作り、GitHub Releases の下書きに添付します。対応環境で動作を確認し、変更内容を記載して公開してください。
+バージョンを `package.json`・`package-lock.json`・`src-tauri/Cargo.toml`・`src-tauri/Cargo.lock`・`src-tauri/tauri.conf.json` で揃え、リリースノートを `release-notes/v0.1.1.md` のようにタグと同じ名前で置いてから `v0.1.1` のようなタグを push すると、GitHub Actions が Linux x86_64 向けの deb と AppImage を作り、そのリリースノートを本文にして GitHub Releases の下書きに添付します。対応環境で動作を確認してから公開してください。
 
 ## ガイドを更新する
 
