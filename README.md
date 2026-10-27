@@ -57,4 +57,6 @@ npm run app:build:appimage # AppImage のみ作成
 
 ## ガイドを更新する
 
-本文は `docs-src/` にあります。`main` に変更を push すると、GitHub Actions が mkbook でページを生成し、GitHub Pages に公開します。見た目は `docs-src/docs-theme.css`、ページの構成は `scripts/style_docs.py` で調整しています。
+本文は `docs-src/`、画面の画像は `docs-images/` にあります。`main` に変更を push すると、GitHub Actions が mkbook でページを生成し、GitHub Pages に公開します。見た目は `docs-src/docs-theme.css`、ページの構成は `scripts/style_docs.py` で調整しています。
+
+本文では、`` `Ctrl + S` `` のようなキー操作はキーの形に、画像だけの段落は説明付きの図に、`> **ヒント**`・`> **注意**` で始まる引用は囲み枠に変換されます。

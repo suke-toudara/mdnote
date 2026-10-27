@@ -166,7 +166,7 @@ export class FolderSearch {
       const col = start - lineStart;
       const lineNo = text.slice(0, start).split('\n').length;
       // 一致した部分が見えるよう、長い行は前後を省く
-      const from = Math.max(0, col - 24);
+      const from = Math.max(0, col - 8);
       const before = (from > 0 ? '…' : '') + line.slice(from, col);
       const hitText = line.slice(col, col + m[0].length);
       const after = line.slice(col + m[0].length, col + m[0].length + SNIPPET);

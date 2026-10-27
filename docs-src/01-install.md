@@ -2,6 +2,18 @@
 title = "インストールと起動"
 ---
 
+mdnote は、見たままの形で Markdown を書ける Linux 用のエディタです。
+
+![mdnote の画面](images/overview.png)
+
+**できること**
+
+- 見出しや表を整形した見た目のまま編集（ソース表示・分割表示にも切り替え可能）
+- フォルダを開いて、ファイル名で探す・全文検索する・ファイル同士をリンクする
+- Mermaid の図、文字の色、画像の表示幅の調整
+- HTML・PDF への書き出しと印刷
+- Claude と相談しながら文書を直すチャット
+
 ## 配布パッケージを選ぶ
 
 mdnote は Linux 用のアプリです。[GitHub Releases](https://github.com/suke-toudara/mdnote/releases) で、使いたいバージョンの「Assets」からパッケージをダウンロードします。利用するだけなら、Node.js や Rust は不要です。
@@ -9,7 +21,7 @@ mdnote は Linux 用のアプリです。[GitHub Releases](https://github.com/su
 - **deb**：Ubuntu・Debian 系で、アプリ一覧に登録して使いたい場合。
 - **AppImage**：インストールせず、ファイルから起動したい場合。
 
-リリースの説明で対応 OS と CPU を確認してください。`amd64`・`x86_64` は Intel / AMD の 64 ビット PC 向けで、ARM 向けではありません。
+> **注意** リリースの説明で対応 OS と CPU を確認してください。`amd64`・`x86_64` は Intel / AMD の 64 ビット PC 向けで、ARM 向けではありません。
 
 ## deb をインストールする
 

@@ -15,6 +15,36 @@ for source in sources:
     filename = source.stem + '.html'
     pages.append((filename, title))
 
+KEY = r'(?:Ctrl|Shift|Alt|Tab|Enter|Esc|Space|[A-Z0-9/])'
+
+
+def keys(match):
+    """`Ctrl + S` のようなキー操作を、キーの形で表示する。"""
+    parts = match[1].split(' + ')
+    return '<span class="keys">' + '<span class="plus">+</span>'.join(f'<kbd>{part}</kbd>' for part in parts) + '</span>'
+
+
+def figure(match):
+    """段落に画像だけがあるときは、代替テキストを説明文にして枠付きで表示する。"""
+    attrs = match[1]
+    alt = re.search(r'alt="([^"]*)"', attrs)
+    caption = f'<figcaption>{alt[1]}</figcaption>' if alt and alt[1] else ''
+    return f'<figure class="screenshot"><img {attrs.rstrip("/ ")} loading="lazy">{caption}</figure>'
+
+
+def callout(match):
+    """「> **ヒント**」「> **注意**」で始まる引用を囲み枠にする。"""
+    kind = {'ヒント': 'tip', '注意': 'warning'}[match[1]]
+    return f'<blockquote class="callout {kind}">\n<p><strong class="callout-label">{match[1]}</strong>'
+
+
+def decorate(content):
+    content = re.sub(rf'<code>({KEY}(?: \+ {KEY})*)</code>', keys, content)
+    content = re.sub(r'<p>\s*<img ([^>]*)>\s*</p>', figure, content)
+    content = re.sub(r'<blockquote>\s*<p><strong>(ヒント|注意)</strong>', callout, content)
+    return content
+
+
 for index, (filename, title) in enumerate(pages):
     path = site / filename
     original = path.read_text()
@@ -23,6 +53,7 @@ for index, (filename, title) in enumerate(pages):
     content = re.sub(r'<h1 class="title">.*?</h1>', '', content, count=1, flags=re.S)
     # mkbook の見出しリンクの href と id を一致させる。
     content = re.sub(r'(<a href="#([^"]+)"[^>]*\bid=")[^"]+("[^>]*>)', r'\1\2\3', content)
+    content = decorate(content)
     toc = ''.join(f'<li><a href="{name}"' + (' aria-current="page"' if name == filename else '') + f'>{html.escape(label)}</a></li>' for name, label in pages)
     navigation = f'<ul class="chapters">{toc}</ul>'
     adjacent = []
@@ -48,3 +79,4 @@ for index, (filename, title) in enumerate(pages):
 # ガイドの入口にも最初の章を表示する。従来の章の URL は維持する。
 shutil.copyfile(site / pages[0][0], site / 'index.html')
 shutil.copyfile(root / 'docs-src/docs-theme.css', site / 'style.css')
+shutil.copytree(root / 'docs-images', site / 'images', dirs_exist_ok=True)
