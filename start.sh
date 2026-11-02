@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # mdnote の起動スクリプト
 #
-#   ./start.sh [ファイル.md]          アプリを起動する (ソースが更新されていれば先にビルドする)
-#   ./start.sh --dev [ファイル.md]    開発モード (ホットリロード) で起動する
+#   ./start.sh [ファイル.md | フォルダ]          アプリを起動する (ソースが更新されていれば先にビルドする)
+#   ./start.sh --dev [ファイル.md | フォルダ]    開発モード (ホットリロード) で起動する
 #   ./start.sh --build                ビルドだけ行う
 set -euo pipefail
 

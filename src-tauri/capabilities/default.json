@@ -9,6 +9,8 @@
   "permissions": [
     "core:default",
     "core:window:allow-set-title",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
     "core:window:allow-destroy",
     "core:webview:allow-create-webview-window",
     "dialog:default",

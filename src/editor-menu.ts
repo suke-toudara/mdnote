@@ -4,6 +4,7 @@ import type { EditorView } from '@milkdown/kit/prose/view';
 import { AllSelection, TextSelection } from '@milkdown/kit/prose/state';
 import { type MenuEntry, showContextMenu } from './context-menu';
 import { type ClipboardHandlers, copySelection, pasteFromClipboard } from './editor-clipboard';
+import { setImageAlign } from './image-size';
 
 export interface EditorMenuHandlers extends ClipboardHandlers {
   bold(): void;
@@ -52,6 +53,15 @@ export function setupEditorMenu(view: () => EditorView, handlers: EditorMenuHand
       { label: 'インラインコード', shortcut: 'Ctrl+E', disabled: empty || !editable, run: handlers.code },
       { label: '文字の色…', disabled: empty || !editable, run: handlers.color },
     ];
+    const imageBlock = target.closest<HTMLElement>('.milkdown-image-block');
+    if (imageBlock) {
+      items.push(
+        'separator',
+        { label: '画像を左寄せ', disabled: !editable, run: () => setImageAlign(view(), imageBlock, 'left') },
+        { label: '画像を中央に', disabled: !editable, run: () => setImageAlign(view(), imageBlock, 'center') },
+        { label: '画像を右寄せ', disabled: !editable, run: () => setImageAlign(view(), imageBlock, 'right') },
+      );
+    }
     const fileLink = handlers.canInsertFileLink();
     if (fileLink || href) items.push('separator');
     if (fileLink) items.push({ label: 'ファイルへのリンクを挿入…', shortcut: '[[', disabled: !editable, run: handlers.insertFileLink });

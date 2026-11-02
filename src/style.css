@@ -1526,6 +1526,15 @@ body.focus-mode .wysiwyg-pane .milkdown .ProseMirror {
   display: none;
 }
 
+/* 画像の配置 (既定は中央)。Crepe の .image-wrapper は margin: 0 auto で中央に置かれている */
+.wysiwyg-pane .milkdown .milkdown-image-block[data-align="left"] > .image-wrapper {
+  margin: 0 auto 0 0;
+}
+
+.wysiwyg-pane .milkdown .milkdown-image-block[data-align="right"] > .image-wrapper {
+  margin: 0 0 0 auto;
+}
+
 .image-width-handle {
   position: fixed;
   z-index: 15;
@@ -1540,6 +1549,66 @@ body.focus-mode .wysiwyg-pane .milkdown .ProseMirror {
 
 .image-width-handle[hidden] {
   display: none;
+}
+
+/* ---- 文書だけの表示 (F5): ツールバーや一覧を隠し、本文だけを全画面で見せる ---- */
+
+.doc-only-exit {
+  display: none;
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  z-index: 20;
+  font-size: 12px;
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+
+body.document-only .doc-only-exit {
+  display: block;
+}
+
+body.document-only .doc-only-exit:hover,
+body.document-only .doc-only-exit:focus-visible {
+  opacity: 1;
+}
+
+body.document-only :is(.toolbar, .outline, .tab-bar, .find-bar, .statusbar, .terminal-panel, .claude-panel, #notice) {
+  display: none !important;
+}
+
+/* 画面が広くなるので、本文は読みやすい幅で中央に置く */
+body.document-only .wysiwyg-pane .milkdown .ProseMirror {
+  max-width: 860px;
+  margin: 0 auto;
+  padding-top: 48px;
+}
+
+/* 文書だけの表示で画像をクリックすると、画面いっぱいに見せる (image-viewer.ts) */
+.image-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  cursor: zoom-out;
+}
+
+.image-viewer img {
+  width: auto;
+  height: auto;
+  max-width: 96vw;
+  max-height: 94vh;
+  object-fit: contain;
+}
+
+@media print {
+  .doc-only-exit,
+  .image-viewer {
+    display: none !important;
+  }
 }
 
 @media print {

@@ -178,6 +178,7 @@
     </footer>
 
     <button id="focus-exit" class="focus-exit" type="button" title="Ctrl+Shift+Enter">集中モードを終了</button>
+    <button id="doc-only-exit" class="doc-only-exit" type="button" title="F5">表示を戻す</button>
     <div id="context-menu" class="context-menu" role="menu" hidden></div>
     <input id="file-input" type="file" accept=".md,.markdown,.txt,text/markdown" hidden />
     <dialog id="diff-dialog" class="diff-dialog" aria-labelledby="diff-title">
@@ -232,7 +233,7 @@
     </dialog>
     <dialog id="shortcuts-dialog" class="diff-dialog" aria-labelledby="shortcuts-title">
       <h2 id="shortcuts-title">ショートカット</h2>
-      <dl class="shortcuts-list"><dt>Ctrl/⌘ + S</dt><dd>保存</dd><dt>Ctrl/⌘ + Shift + S</dt><dd>名前を付けて保存</dd><dt>Ctrl/⌘ + O</dt><dd>ファイルを開く</dd><dt>Ctrl/⌘ + Shift + O</dt><dd>フォルダを開く</dd><dt>Ctrl/⌘ + F</dt><dd>検索</dd><dt>Ctrl/⌘ + H</dt><dd>検索と置換</dd><dt>Ctrl/⌘ + Shift + P</dt><dd>ファイルを名前で探す</dd><dt>Ctrl/⌘ + Shift + F</dt><dd>フォルダ内を検索</dd><dt>Ctrl/⌘ + /</dt><dd>表示モード切替</dd><dt>Ctrl/⌘ + Shift + Enter</dt><dd>集中モード</dd><dt>Ctrl/⌘ + Shift + C / V</dt><dd>書式なしでコピー / 貼り付け</dd><dt>[[</dt><dd>ファイルへのリンクを挿入</dd><dt>Ctrl/⌘ + Tab / Shift + Tab</dt><dd>タブ切替</dd><dt>Ctrl/⌘ + W</dt><dd>タブを閉じる</dd><dt>Ctrl/⌘ + P</dt><dd>印刷・PDF</dd><dt>Ctrl/⌘ + Shift + E</dt><dd>サイドバー切替</dd><dt>Ctrl + J</dt><dd>ターミナルの表示切替</dd><dt>ターミナルで Ctrl + Shift + C / V</dt><dd>コピー / 貼り付け</dd><dt>ソース表示で Tab / Shift + Tab</dt><dd>インデント / 逆インデント</dd></dl>
+      <dl class="shortcuts-list"><dt>Ctrl/⌘ + S</dt><dd>保存</dd><dt>Ctrl/⌘ + Shift + S</dt><dd>名前を付けて保存</dd><dt>Ctrl/⌘ + O</dt><dd>ファイルを開く</dd><dt>Ctrl/⌘ + Shift + O</dt><dd>フォルダを開く</dd><dt>Ctrl/⌘ + F</dt><dd>検索</dd><dt>Ctrl/⌘ + H</dt><dd>検索と置換</dd><dt>Ctrl/⌘ + Shift + P</dt><dd>ファイルを名前で探す</dd><dt>Ctrl/⌘ + Shift + F</dt><dd>フォルダ内を検索</dd><dt>Ctrl/⌘ + /</dt><dd>表示モード切替</dd><dt>Ctrl/⌘ + Shift + Enter</dt><dd>集中モード</dd><dt>F5</dt><dd>文書だけの表示（全画面で文書以外を隠す。もう一度押すと戻る。画像をクリックすると大きく表示）</dd><dt>Ctrl/⌘ + Shift + C / V</dt><dd>書式なしでコピー / 貼り付け</dd><dt>[[</dt><dd>ファイルへのリンクを挿入</dd><dt>Ctrl/⌘ + Tab / Shift + Tab</dt><dd>タブ切替</dd><dt>Ctrl/⌘ + W</dt><dd>タブを閉じる</dd><dt>Ctrl/⌘ + P</dt><dd>印刷・PDF</dd><dt>Ctrl/⌘ + Shift + E</dt><dd>サイドバー切替</dd><dt>Ctrl + J</dt><dd>ターミナルの表示切替</dd><dt>ターミナルで Ctrl + Shift + C / V</dt><dd>コピー / 貼り付け</dd><dt>ソース表示で Tab / Shift + Tab</dt><dd>インデント / 逆インデント</dd></dl>
       <div class="dialog-actions"><button id="shortcuts-close">閉じる</button></div>
     </dialog>
     <script type="module" src="/src/main.ts"></script>

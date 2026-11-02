@@ -323,6 +323,16 @@ export async function setWindowTitle(title: string) {
   if (isTauri) await getCurrentWindow().setTitle(title);
 }
 
+// 全画面 (デスクトップ版のみ)
+export async function setFullscreen(on: boolean) {
+  if (isTauri) await getCurrentWindow().setFullscreen(on);
+}
+
+export async function isWindowFullscreen(): Promise<boolean> {
+  return isTauri && (await getCurrentWindow().isFullscreen());
+}
+
+
 // メインのウィンドウだけが前回のタブやフォルダを引き継ぐ。切り離したタブのウィンドウは doc-*
 export const windowLabel = isTauri ? getCurrentWindow().label : 'main';
 export const isMainWindow = windowLabel === 'main';
@@ -351,8 +361,13 @@ export async function openNewWindow(label: string, x?: number, y?: number) {
   });
 }
 
-export async function initialFile(): Promise<string | null> {
-  return isTauri ? invoke<string | null>('initial_file') : null;
+export interface InitialPath {
+  path: string;
+  isDir: boolean;
+}
+
+export async function initialPaths(): Promise<InitialPath[]> {
+  return isTauri ? invoke<InitialPath[]>('initial_paths') : [];
 }
 
 export function onCloseRequested(shouldClose: () => Promise<boolean>) {

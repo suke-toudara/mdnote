@@ -1,11 +1,19 @@
-/// 起動時の引数で渡された Markdown ファイルのパス（「このアプリで開く」用）
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct InitialPath {
+  path: String,
+  is_dir: bool,
+}
+
+/// 起動時の引数で渡されたファイルやフォルダ（「このアプリで開く」「mdnote .」用）
 #[tauri::command]
-fn initial_file() -> Option<String> {
+fn initial_paths() -> Vec<InitialPath> {
   std::env::args()
     .skip(1)
-    .find(|a| !a.starts_with('-'))
-    .and_then(|a| std::fs::canonicalize(a).ok())
-    .map(|p| p.to_string_lossy().into_owned())
+    .filter(|a| !a.starts_with('-'))
+    .filter_map(|a| std::fs::canonicalize(a).ok())
+    .map(|p| InitialPath { is_dir: p.is_dir(), path: p.to_string_lossy().into_owned() })
+    .collect()
 }
 
 /// ファイルやフォルダをゴミ箱へ移す (完全には消さないので、あとから戻せる)
@@ -160,7 +168,7 @@ pub fn run() {
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_opener::init())
-    .invoke_handler(tauri::generate_handler![initial_file, move_to_trash, export_pdf, credentials::claude_key_status, credentials::set_claude_key, credentials::clear_claude_key, ask_claude, agent::run_document_agent, agent::apply_agent_edits, agent::discard_agent_run, terminal::terminal_open, terminal::terminal_write, terminal::terminal_resize, terminal::terminal_close])
+    .invoke_handler(tauri::generate_handler![initial_paths,move_to_trash, export_pdf, credentials::claude_key_status, credentials::set_claude_key, credentials::clear_claude_key, ask_claude, agent::run_document_agent, agent::apply_agent_edits, agent::discard_agent_run, terminal::terminal_open, terminal::terminal_write, terminal::terminal_resize, terminal::terminal_close])
     .on_window_event(|window, event| {
       if let tauri::WindowEvent::Destroyed = event {
         terminal::close_window(window);

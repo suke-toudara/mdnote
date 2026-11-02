@@ -91,6 +91,8 @@ export interface Handoff {
   dirty: boolean;
   folder: string | null;
   expanded: string[];
+  // 新しいウィンドウを全画面で開く
+  fullscreen?: boolean;
 }
 
 export function writeHandoff(label: string, handoff: Handoff) {

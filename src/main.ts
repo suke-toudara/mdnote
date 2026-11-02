@@ -31,7 +31,7 @@ import {
   confirmDialog,
   fileStamp,
   forgetBrowserHandle,
-  initialFile,
+  initialPaths,
   isImagePath,
   isMarkdownPath,
   isMainWindow,
@@ -51,6 +51,8 @@ import {
   openFolderDialog,
   readDoc,
   resolveImageUrl,
+  isWindowFullscreen,
+  setFullscreen,
   saveDoc,
   setWindowTitle,
   storeImage,
@@ -65,6 +67,8 @@ import { setupEditorMenu } from './editor-menu';
 import { focusCurrentBlock, focusModeOn, setFocusMode } from './focus-mode';
 import { setupMermaid } from './mermaid';
 import { imageBlockWithWidth, imageWidthHandle } from './image-size';
+import { guardHeadingKey, headingGuard, noSetextHeading } from './heading-guard';
+import { setupImageViewer } from './image-viewer';
 import { defaultHandlers } from 'mdast-util-to-markdown';
 import type { Handle } from 'mdast-util-to-markdown';
 import { offsetTopsOf, replaceRange, scrollToPos, setupSourceEditor } from './source-editor';
@@ -111,6 +115,7 @@ Excel やスプレッドシートの範囲をコピーして貼り付けると�
 | Ctrl+F / Ctrl+H | 検索 / 置換 |
 | Ctrl+Shift+P / Ctrl+Shift+F | ファイルを名前で探す / フォルダ内を検索 |
 | Ctrl+Shift+Enter | 集中モード |
+| F5 | 文書だけの表示 (全画面で、文書以外を隠す。もう一度押すと戻る) |
 | Ctrl+Shift+C / Ctrl+Shift+V | 書式なしでコピー / 貼り付け |
 | Ctrl+Shift+E | サイドバーの表示切り替え |
 | Ctrl+S / Ctrl+Shift+S | 保存 / 名前を付けて保存 |
@@ -336,7 +341,7 @@ crepe.editor.config((ctx) => {
   }));
 });
 setupMermaid(crepe.editor);
-crepe.editor.use(excelLikeTable).use(brInTableCells).use(remarkTextColor).use(textColorSchema).use(focusCurrentBlock).use(imageBlockWithWidth).use(imageWidthHandle).use(fileLinkInput);
+crepe.editor.use(excelLikeTable).use(brInTableCells).use(remarkTextColor).use(textColorSchema).use(focusCurrentBlock).use(imageBlockWithWidth).use(imageWidthHandle).use(fileLinkInput).use(headingGuard).use(noSetextHeading);
 crepe.on((api) => api.markdownUpdated(() => syncFromEditor()));
 await crepe.create();
 cur.lastEditorMd = crepe.getMarkdown();
@@ -352,27 +357,56 @@ view().dom.addEventListener(
     if (!hardBreakEnter || e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.isComposing || e.keyCode === 229) return;
     // 「/」メニューなどが開いているときは、Enter で項目を選ぶ
-    if (document.querySelector('.milkdown-slash-menu[data-show="true"]')) return;
-    const v = view();
-    const { selection, schema } = v.state;
-    if (!(selection instanceof TextSelection)) return;
-    const { $from } = selection;
-    if ($from.parent.type.name !== 'paragraph' || $from.parent.content.size === 0) return;
-    const container = $from.node($from.depth - 1).type.name;
-    if (container !== 'doc' && container !== 'blockquote') return;
-    e.preventDefault();
-    e.stopPropagation();
-    const tr = v.state.tr;
-    if (selection.empty && $from.nodeBefore?.type.name === 'hardbreak') {
-      // 改行の直後: その改行を取り除いて段落を分ける
-      tr.delete($from.pos - 1, $from.pos).split($from.pos - 1);
-    } else {
-      tr.replaceSelectionWith(schema.nodes.hardbreak.create());
-    }
-    v.dispatch(tr.scrollIntoView());
+    if (slashMenuOpen()) return;
+    hardBreakOnEnter(view(), e);
   },
   true,
 );
+
+// 段落の中の Enter を改行にする。処理したら true
+function hardBreakOnEnter(v: ReturnType<typeof view>, e: KeyboardEvent): boolean {
+  const { selection, schema } = v.state;
+  if (!(selection instanceof TextSelection)) return false;
+  const { $from } = selection;
+  if ($from.parent.type.name !== 'paragraph' || $from.parent.content.size === 0) return false;
+  const container = $from.node($from.depth - 1).type.name;
+  if (container !== 'doc' && container !== 'blockquote') return false;
+  e.preventDefault();
+  e.stopPropagation();
+  const tr = v.state.tr;
+  if (selection.empty && $from.nodeBefore?.type.name === 'hardbreak') {
+    // 改行の直後: その改行を取り除いて段落を分ける
+    tr.delete($from.pos - 1, $from.pos).split($from.pos - 1);
+  } else {
+    tr.replaceSelectionWith(schema.nodes.hardbreak.create());
+  }
+  v.dispatch(tr.scrollIntoView());
+  return true;
+}
+
+// 「/」メニューは、行頭の「/」や左の「＋」で開いたまま文字を打ち続けても開いたままで、そこで Enter を
+// 押すと選ばれている項目 (見出しなど) に変わってしまう。メニューに Enter を渡すのは「/見出し」のように
+// 「/」に続けて語を打っている途中 (または何も打っていない) ときだけにし、それ以外はメニューを閉じて普通の Enter にする
+const slashMenuOpen = () => !!document.querySelector('.milkdown-slash-menu[data-show="true"]');
+window.addEventListener(
+  'keydown',
+  (e) => {
+    if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229 || !slashMenuOpen()) return;
+    const v = view();
+    if (/^(?:\/[^\s/]*)?$/.test(v.state.selection.$from.parent.textContent)) return;
+    // Crepe のメニューは window の捕捉段階で Enter を受けるので、ここで止めて自分で処理する
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    if (!(hardBreakEnter && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && hardBreakOnEnter(v, e))) {
+      v.someProp('handleKeyDown', (f) => f(v, e));
+    }
+  },
+  true,
+);
+
+// 見出しのすぐ下の行で Backspace を押したときなどに、本文が見出しにくっつかないようにする
+view().dom.addEventListener('keydown', (e) => guardHeadingKey(view(), e), true);
 
 // 改行の直後に「- 」「1. 」「# 」「> 」「``` 」などを打ったら、そこで段落を分けて
 // 箇条書きや見出しへの自動変換が効くようにする (自動変換は段落の先頭でしか働かないため)
@@ -775,6 +809,7 @@ function renderTabs() {
       e.preventDefault();
       showContextMenu([
         { label: '新しいウィンドウで開く', disabled: !isTauri, run: () => void detachTab(t).catch(reportError) },
+        { label: '全画面の新しいウィンドウで開く', disabled: !isTauri, run: () => void detachTab(t, undefined, undefined, true).catch(reportError) },
         'separator',
         { label: '閉じる', shortcut: 'Ctrl+W', run: () => void closeTab(t).catch(reportError) },
       ], e.clientX, e.clientY);
@@ -872,7 +907,7 @@ function removeTab(t: Tab) {
 
 // タブを新しいウィンドウへ移す。未保存の変更もそのまま引き継ぐ
 // x, y: ウィンドウを置く画面上の位置 (ドラッグで離した場所)
-async function detachTab(t: Tab, x?: number, y?: number) {
+async function detachTab(t: Tab, x?: number, y?: number, fullscreen = false) {
   if (!tabs.includes(t)) return;
   if (t === cur) captureCurrent();
   const label = newWindowLabel();
@@ -882,6 +917,7 @@ async function detachTab(t: Tab, x?: number, y?: number) {
     dirty: t.dirty,
     folder: fileTree.current,
     expanded: fileTree.expandedDirs,
+    fullscreen,
   });
   try {
     await openNewWindow(label, x === undefined ? undefined : Math.max(0, x - 120), y === undefined ? undefined : Math.max(0, y - 20));
@@ -1913,6 +1949,34 @@ window.addEventListener('keydown', (e) => {
   fn();
 });
 
+// F5 で文書だけの表示に切り替える
+window.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'F5' && !(e.target as HTMLElement).closest?.('.terminal-panel')) {
+    e.preventDefault();
+    void toggleDocumentOnly().catch(reportError);
+  }
+});
+
+// 文書だけの表示: ツールバーや一覧などを隠し、全画面で文書の本文だけを見せる。
+// 切り替える前の全画面の状態を覚えておき、戻るときに復元する
+let fullscreenBeforeDocumentOnly: boolean | null = null;
+
+async function toggleDocumentOnly() {
+  const on = !document.body.classList.contains('document-only');
+  if (on) {
+    fullscreenBeforeDocumentOnly = await isWindowFullscreen().catch(() => false);
+    await setFullscreen(true);
+  } else if (fullscreenBeforeDocumentOnly !== null) {
+    await setFullscreen(fullscreenBeforeDocumentOnly);
+    fullscreenBeforeDocumentOnly = null;
+  }
+  document.body.classList.toggle('document-only', on);
+}
+
+$('doc-only-exit').addEventListener('click', () => void toggleDocumentOnly().catch(reportError));
+setupImageViewer();
+
 // 他のアプリに切り替えるときは保存しておき、戻ってきたら変更を確認する
 window.addEventListener('blur', () => void autosaveAll());
 window.addEventListener('focus', () => {
@@ -1974,6 +2038,7 @@ if (isTauri && !isMainWindow) {
     if (handoff.folder) await openFolder(handoff.folder, handoff.expanded, false).catch(() => fileTree.setFolder(null));
     const t = openInTab(handoff.doc, handoff.content);
     if (handoff.dirty) setDirty(t, true);
+    if (handoff.fullscreen) await setFullscreen(true).catch(reportError);
   }
 } else if (isTauri) {
   if (savedSession.folder) {
@@ -1988,9 +2053,12 @@ if (isTauri && !isMainWindow) {
   // 前回開いていたタブを開き直す (消えたファイルは飛ばす)
   const files = savedSession.files.length ? savedSession.files : lastFile ? [lastFile] : [];
   for (const path of files) await openPath(path).catch(() => {});
-  const arg = await initialFile().catch(() => null);
-  if (arg) await openPath(arg).catch(reportError);
-  else {
+  const args = await initialPaths().catch(() => []);
+  for (const arg of args) {
+    if (arg.isDir) await openFolder(arg.path).catch(reportError);
+    else await openPath(arg.path).catch(reportError);
+  }
+  if (!args.some((arg) => !arg.isDir)) {
     const active = tabs.find((t) => t.doc.path === savedSession.active);
     if (active) activate(active);
   }
